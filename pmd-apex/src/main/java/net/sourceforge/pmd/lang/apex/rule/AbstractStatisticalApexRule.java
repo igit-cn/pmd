@@ -12,14 +12,21 @@ import net.sourceforge.pmd.lang.rule.stat.StatisticalRule;
 import net.sourceforge.pmd.lang.rule.stat.StatisticalRuleHelper;
 import net.sourceforge.pmd.stat.DataPoint;
 
+
+/**
+ * @deprecated see {@link StatisticalRule}
+ */
+@Deprecated
 public abstract class AbstractStatisticalApexRule extends AbstractApexRule implements StatisticalRule {
 
     private final StatisticalRuleHelper helper = new StatisticalRuleHelper(this);
 
+    @Override
     public void addDataPoint(DataPoint point) {
         helper.addDataPoint(point);
     }
 
+    @Override
     public Object[] getViolationParameters(DataPoint point) {
         return new Object[0];
     }

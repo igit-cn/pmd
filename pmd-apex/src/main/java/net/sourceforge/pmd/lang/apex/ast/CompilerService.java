@@ -21,6 +21,7 @@ import apex.jorje.semantic.compiler.CompilerOperation;
 import apex.jorje.semantic.compiler.CompilerStage;
 import apex.jorje.semantic.compiler.SourceFile;
 import apex.jorje.semantic.compiler.sfdc.AccessEvaluator;
+import apex.jorje.semantic.compiler.sfdc.NoopCompilerProgressCallback;
 import apex.jorje.semantic.compiler.sfdc.QueryValidator;
 import apex.jorje.semantic.compiler.sfdc.SymbolProvider;
 import com.google.common.collect.ImmutableList;
@@ -29,9 +30,9 @@ import com.google.common.collect.ImmutableList;
  * Central point for interfacing with the compiler. Based on <a href=
  * "https://github.com/forcedotcom/idecore/blob/master/com.salesforce.ide.apex.core/src/com/salesforce/ide/apex/internal/core/CompilerService.java"
  * > CompilerService</a> but with Eclipse dependencies removed.
- * 
+ *
  * @author nchen
- * 
+ *
  */
 public class CompilerService {
     public static final CompilerService INSTANCE = new CompilerService();
@@ -41,7 +42,7 @@ public class CompilerService {
 
     /**
      * Configure a compiler with the default configurations:
-     * 
+     *
      * @param symbolProvider
      *            EmptySymbolProvider, doesn't provide any symbols that are not
      *            part of source.
@@ -56,7 +57,7 @@ public class CompilerService {
 
     /**
      * Configure a compiler with the following configurations:
-     * 
+     *
      * @param symbolProvider
      *            A way to retrieve symbols, where symbols are names of types.
      * @param accessEvaluator
@@ -96,7 +97,8 @@ public class CompilerService {
 
     private CompilationInput createCompilationInput(List<SourceFile> sourceFiles,
             AstVisitor<AdditionalPassScope> visitor) {
-        return new CompilationInput(sourceFiles, symbolProvider, accessEvaluator, queryValidator, visitor);
+        return new CompilationInput(sourceFiles, symbolProvider, accessEvaluator, queryValidator, visitor,
+                NoopCompilerProgressCallback.get());
     }
 
     /**
@@ -106,7 +108,7 @@ public class CompilerService {
      * don't have all the parts for yet in the offline compiler. Rather than
      * stop all work on that, we bypass it so that we can still do useful things
      * like find all your types, find all your methods, etc.
-     * 
+     *
      */
     @SuppressWarnings("unchecked")
     private void callAdditionalPassVisitor(ApexCompiler compiler) {

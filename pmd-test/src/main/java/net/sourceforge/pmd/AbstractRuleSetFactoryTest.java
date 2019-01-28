@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.regex.Pattern;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -306,11 +307,11 @@ public abstract class AbstractRuleSetFactoryTest {
         file = file.replaceAll("xmlns=\"" + rulesetNamespace + "\"", "");
         file = file.replaceAll("xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"", "");
         file = file.replaceAll("xsi:schemaLocation=\"" + rulesetNamespace
-                + " http://pmd.sourceforge.net/ruleset_\\d_0_0.xsd\"", "");
+                + " https://pmd.sourceforge.io/ruleset_\\d_0_0.xsd\"", "");
 
         if (rulesetNamespace.equals(RuleSetWriter.RULESET_2_0_0_NS_URI)) {
             file = "<?xml version=\"1.0\"?>" + PMD.EOL + "<!DOCTYPE ruleset SYSTEM "
-                    + "\"http://pmd.sourceforge.net/ruleset_2_0_0.dtd\">" + PMD.EOL + file;
+                    + "\"https://pmd.sourceforge.io/ruleset_2_0_0.dtd\">" + PMD.EOL + file;
         } else {
             file = "<?xml version=\"1.0\"?>" + PMD.EOL + "<!DOCTYPE ruleset>" + PMD.EOL + file;
         }
@@ -452,8 +453,14 @@ public abstract class AbstractRuleSetFactoryTest {
             List<PropertyDescriptor<?>> propertyDescriptors2 = rule2.getPropertyDescriptors();
             assertEquals(message + ", Rule property descriptor ", propertyDescriptors1, propertyDescriptors2);
             for (int j = 0; j < propertyDescriptors1.size(); j++) {
-                assertEquals(message + ", Rule property value " + j, rule1.getProperty(propertyDescriptors1.get(j)),
-                        rule2.getProperty(propertyDescriptors2.get(j)));
+                Object value1 = rule1.getProperty(propertyDescriptors1.get(j));
+                Object value2 = rule2.getProperty(propertyDescriptors2.get(j));
+                // special case for Pattern, there is no equals method
+                if (propertyDescriptors1.get(j).type() == Pattern.class) {
+                    value1 = ((Pattern) value1).pattern();
+                    value2 = ((Pattern) value2).pattern();
+                }
+                assertEquals(message + ", Rule property value " + j, value1, value2);
             }
             assertEquals(message + ", Rule property descriptor count", propertyDescriptors1.size(),
                     propertyDescriptors2.size());
@@ -489,8 +496,8 @@ public abstract class AbstractRuleSetFactoryTest {
 
         ValidateDefaultHandler() {
             schemaMapping = new HashMap<>();
-            schemaMapping.put("http://pmd.sourceforge.net/ruleset_2_0_0.xsd", "ruleset_2_0_0.xsd");
-            schemaMapping.put("http://pmd.sourceforge.net/ruleset_2_0_0.dtd", "ruleset_2_0_0.dtd");
+            schemaMapping.put("https://pmd.sourceforge.io/ruleset_2_0_0.xsd", "ruleset_2_0_0.xsd");
+            schemaMapping.put("https://pmd.sourceforge.io/ruleset_2_0_0.dtd", "ruleset_2_0_0.dtd");
         }
 
         public ValidateDefaultHandler resetValid() {

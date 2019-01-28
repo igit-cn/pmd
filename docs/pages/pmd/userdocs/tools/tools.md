@@ -1,14 +1,24 @@
 ---
 title: Tools / Integrations
+tags: [userdocs, tools]
+
 permalink: pmd_userdocs_tools.html
 author: David Dixon-Peugh <dpeugh@users.sourceforge.net>
 ---
 
-* IDE plugins
-* [Continuous Integrations plugins](/pmd_userdocs_ci.html)
-* GUIs
+## Automated Code Review
 
+### Codacy
 
+[Codacy](https://www.codacy.com/) automates code reviews and monitors code quality on every commit and pull request.
+It gives visibility into the technical debt and it can track code style and security issues, code coverage, code duplication, cyclomatic complexity and enforce best practices.
+Codacy is static analysis without the hassle.
+
+With Codacy you have PMDJava analysis out-of-the-box, and it is free for open source projects.
+
+* Homepage: [https://www.codacy.com/](https://www.codacy.com/)
+* Source code: [https://github.com/codacy/codacy-pmdjava](https://github.com/codacy/codacy-pmdjava)
+* Maintainer: Codacy
 
 ## IDE Integrations
 
@@ -27,13 +37,6 @@ author: David Dixon-Peugh <dpeugh@users.sourceforge.net>
         <td></td>
         <td><a href="https://github.com/pmd/pmd-misc/tree/master/pmd-bluej/">pmd-bluej</a></td>
         <td><a href="http://tomcopeland.blogs.com/">Tom Copeland</a></td>
-    </tr>
-
-    <tr>
-        <td><a href="#codacy">Codacy</a></td>
-        <td></td>
-        <td><a class="externalLink" href="https://github.com/codacy/codacy-pmdjava">github: codacy/codacy-pmdjava</a></td>
-        <td>Codacy</td>
     </tr>
 
     <tr>
@@ -163,38 +166,6 @@ being used by a getResourceAsStream() call to load it out of the PMD jar files.
 [BlueJ](http://bluej.org/) is a teaching IDE. To install the PMD extension for BlueJ, download
 the [PMDExtension jar file](http://sourceforge.net/projects/pmd/files/pmd-bluej/pmd-bluej-1.0/)
 and place it in your `bluej/lib/extensions/` directory.
-
-
-### Codacy
-
-Although it is not an IDE, with [Codacy](https://www.codacy.com/) you have PMDJava analysis out-of-the-box,
-and it is free for open source projects.
-
-
-### Code Guide
-
-Here's how to set up PMD with Omnicore's CodeGuide:
-
-*   Download the PMD zip file from [here](http://sourceforge.net/projects/pmd/files/pmd/)
-*   Unpack the zip file to your local disk. I put it in /Applications/
-*   Add the following tool to CodeGuide (Tools->Configure Tools->New):
-    *   Name: PMD
-    *   Kind: Tool for directories
-    *   Executable: /Applications/pmd-bin-{{pmd.site.version}}/bin/run.sh
-    *   Arguments: pmd -d $DIRECTORY_PATH$ -f emacs $USER_ARGUMENTS$
-
-Now you can right click on a source directory, select the PMD tool and a dialog box will appear.
-Type in the name of a rule set (e.g. unusedcode). PMD is then executed on the directory you
-selected with the rule set you specified. Since CodeGuide understands the emacs syntax you can
-click on the file name and CodeGuide will jump to that file and line number.
-
-Note: I set this up on Mac OS X. It should work on other unix variations just the same.
-Of course you need to change the "Executable" setting above to where your PMD is installed.
-On Windows you need to use the pmd.bat file instead of pmd.sh.
-
-If you haven't heard of CodeGuide before, [check it out](http://www.omnicore.com/).
-It's a great IDE.
-
 
 ### Eclipse
 

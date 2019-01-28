@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import net.sourceforge.pmd.RuleContext;
 import net.sourceforge.pmd.lang.ast.Node;
@@ -46,7 +47,7 @@ public class SaxonXPathRuleQuery extends AbstractXPathRuleQuery {
     private static final Map<Node, DocumentNode> CACHE = new LinkedHashMap<Node, DocumentNode>(MAX_CACHE_SIZE) {
         private static final long serialVersionUID = -7653916493967142443L;
 
-
+        @Override
         protected boolean removeEldestEntry(final Map.Entry<Node, DocumentNode> eldest) {
             return size() > MAX_CACHE_SIZE;
         }
@@ -235,7 +236,9 @@ public class SaxonXPathRuleQuery extends AbstractXPathRuleQuery {
         */
         if (value == null) {
             return UntypedAtomicValue.ZERO_LENGTH_UNTYPED;
-
+        } else if (value instanceof Enum) {
+            // enums use their toString
+            return new StringValue(value.toString());
         } else if (value instanceof String) {
             return new StringValue((String) value);
         } else if (value instanceof Boolean) {
@@ -250,6 +253,8 @@ public class SaxonXPathRuleQuery extends AbstractXPathRuleQuery {
             return new StringValue(value.toString());
         } else if (value instanceof Float) {
             return new FloatValue((Float) value);
+        } else if (value instanceof Pattern) {
+            return new StringValue(String.valueOf(value));
         } else {
             // We could maybe use UntypedAtomicValue
             throw new RuntimeException("Unable to create ValueRepresentation for value of type: " + value.getClass());

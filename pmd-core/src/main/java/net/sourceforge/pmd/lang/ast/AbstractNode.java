@@ -7,6 +7,7 @@ package net.sourceforge.pmd.lang.ast;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -20,6 +21,7 @@ import org.w3c.dom.Element;
 
 import net.sourceforge.pmd.PMDVersion;
 import net.sourceforge.pmd.lang.ast.xpath.Attribute;
+import net.sourceforge.pmd.lang.ast.xpath.AttributeAxisIterator;
 import net.sourceforge.pmd.lang.ast.xpath.DocumentNavigator;
 import net.sourceforge.pmd.lang.dfa.DataFlowNode;
 
@@ -134,7 +136,7 @@ public abstract class AbstractNode implements Node {
 
     @Override
     public boolean hasImageEqualTo(String image) {
-        return this.getImage() != null && this.getImage().equals(image);
+        return Objects.equals(this.getImage(), image);
     }
 
     @Override
@@ -276,7 +278,7 @@ public abstract class AbstractNode implements Node {
 
         for (int i = 0; i < node.jjtGetNumChildren(); i++) {
             Node child = node.jjtGetChild(i);
-            if (child.getClass() == targetType) {
+            if (targetType.isAssignableFrom(child.getClass())) {
                 results.add(targetType.cast(child));
             }
 
@@ -401,6 +403,11 @@ public abstract class AbstractNode implements Node {
      * @param types Types to test
      */
     public final boolean hasDescendantOfAnyType(Class<?>... types) {
+        // TODO consider implementing that with a single traversal!
+        // hasDescendantOfType could then be a special case of this one
+        // But to really share implementations, getFirstDescendantOfType's
+        // internal helper could have to give up some type safety to rely
+        // instead on a getFirstDescendantOfAnyType, then cast to the correct type
         for (Class<?> type : types) {
             if (hasDescendantOfType(type)) {
                 return true;
@@ -508,5 +515,11 @@ public abstract class AbstractNode implements Node {
     @Override
     public String toString() {
         return getXPathNodeName();
+    }
+
+
+    @Override
+    public Iterator<Attribute> getXPathAttributesIterator() {
+        return new AttributeAxisIterator(this);
     }
 }

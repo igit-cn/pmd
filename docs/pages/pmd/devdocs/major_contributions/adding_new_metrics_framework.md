@@ -1,7 +1,7 @@
 ---
 title: Adding support for metrics to a language
 short_title: Implement a metrics framework
-tags: [customizing]
+tags: [devdocs, extending, metrics]
 summary: "PMD's Java module has an extensive framework for the calculation of metrics, which allows rule developers
 to implement and use new code metrics very simply. Most of the functionality of this framework is abstracted in such
 a way that any PMD supported language can implement such a framework without too much trouble. Here's how."
@@ -100,5 +100,5 @@ build a `Signature<N>` from a `N` are a good idea.
  the Java framework, you can build a `JavaOperationSigMask` that matches all method signatures with visibility
  `public`. A sigmask implements `SigMask<S>`, where `S` is the type of signature your mask handles.
 * Create utility methods in your abstract class metric class to count signatures matching a specific mask.
-[Example](https://github.com/pmd/pmd/blob/master/pmd-java/src/main/java/net/sourceforge/pmd/lang/java/metrics/AbstractJavaClassMetric.java#L50)
+[Example](https://github.com/pmd/pmd/blob/master/pmd-java/src/main/java/net/sourceforge/pmd/lang/java/metrics/impl/AbstractJavaClassMetric.java#L52)
 

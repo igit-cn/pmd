@@ -18,8 +18,9 @@ import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
 
-import net.sourceforge.pmd.benchmark.Benchmark;
-import net.sourceforge.pmd.benchmark.Benchmarker;
+import net.sourceforge.pmd.benchmark.TimeTracker;
+import net.sourceforge.pmd.benchmark.TimedOperation;
+import net.sourceforge.pmd.benchmark.TimedOperationCategory;
 import net.sourceforge.pmd.cache.ChecksumAware;
 import net.sourceforge.pmd.lang.Language;
 import net.sourceforge.pmd.lang.LanguageVersion;
@@ -57,12 +58,9 @@ public class RuleSet implements ChecksumAware {
 
     /**
      * Creates a new RuleSet with the given checksum.
-     * 
-     * @param checksum
-     *            A checksum of the ruleset, should change only if the ruleset
-     *            was configured differently
-     * @param rules
-     *            The rules to be applied as part of this ruleset
+     *
+     * @param builder
+     *            A rule set builder.
      */
     private RuleSet(final RuleSetBuilder builder) {
         checksum = builder.checksum;
@@ -493,24 +491,24 @@ public class RuleSet implements ChecksumAware {
      *            the current context
      */
     public void apply(List<? extends Node> acuList, RuleContext ctx) {
-        long start = System.nanoTime();
-        for (Rule rule : rules) {
-            try {
+        try (TimedOperation to = TimeTracker.startOperation(TimedOperationCategory.RULE)) {
+            for (Rule rule : rules) {
                 if (!rule.isRuleChain() && applies(rule, ctx.getLanguageVersion())) {
-                    rule.apply(acuList, ctx);
-                    long end = System.nanoTime();
-                    Benchmarker.mark(Benchmark.Rule, rule.getName(), end - start, 1);
-                    start = end;
-                }
-            } catch (RuntimeException e) {
-                if (ctx.isIgnoreExceptions()) {
-                    ctx.getReport().addError(new Report.ProcessingError(e, ctx.getSourceCodeFilename()));
-                    if (LOG.isLoggable(Level.WARNING)) {
-                        LOG.log(Level.WARNING, "Exception applying rule " + rule.getName() + " on file "
-                                + ctx.getSourceCodeFilename() + ", continuing with next rule", e);
+
+                    try (TimedOperation rto = TimeTracker.startOperation(TimedOperationCategory.RULE, rule.getName())) {
+                        rule.apply(acuList, ctx);
+                    } catch (RuntimeException e) {
+                        if (ctx.isIgnoreExceptions()) {
+                            ctx.getReport().addError(new Report.ProcessingError(e, ctx.getSourceCodeFilename()));
+
+                            if (LOG.isLoggable(Level.WARNING)) {
+                                LOG.log(Level.WARNING, "Exception applying rule " + rule.getName() + " on file "
+                                        + ctx.getSourceCodeFilename() + ", continuing with next rule", e);
+                            }
+                        } else {
+                            throw e;
+                        }
                     }
-                } else {
-                    throw e;
                 }
             }
         }
@@ -605,7 +603,9 @@ public class RuleSet implements ChecksumAware {
      *            The Language.
      * @return <code>true</code> if a Rule for the Language uses the DFA layer,
      *         <code>false</code> otherwise.
+     * @deprecated See {@link Rule#isDfa()}
      */
+    @Deprecated
     public boolean usesDFA(Language language) {
         for (Rule r : rules) {
             if (r.getLanguage().equals(language) && r.isDfa()) {
@@ -622,7 +622,9 @@ public class RuleSet implements ChecksumAware {
      *            The Language.
      * @return <code>true</code> if a Rule for the Language uses Type
      *         Resolution, <code>false</code> otherwise.
+     * @deprecated See {@link Rule#isTypeResolution()}
      */
+    @Deprecated
     public boolean usesTypeResolution(Language language) {
         for (Rule r : rules) {
             if (r.getLanguage().equals(language) && r.isTypeResolution()) {
@@ -641,7 +643,9 @@ public class RuleSet implements ChecksumAware {
      *
      * @return {@code true} if a Rule for the Language uses multi file analysis,
      *         {@code false} otherwise.
+     * @deprecated See {@link Rule#isMultifile()}
      */
+    @Deprecated
     public boolean usesMultifile(Language language) {
         for (Rule r : rules) {
             if (r.getLanguage().equals(language) && r.isMultifile()) {

@@ -11,6 +11,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -154,6 +155,11 @@ public class ParserTstUtil {
     }
 
     /** @see #parseJava(LanguageVersionHandler, String)  */
+    public static ASTCompilationUnit parseJava10(String code) {
+        return parseJava(getLanguageVersionHandler("10"), code);
+    }
+
+    /** @see #parseJava(LanguageVersionHandler, String)  */
     public static ASTCompilationUnit parseJava13(Class<?> source) {
         return parseJava13(getSourceFromClass(source));
     }
@@ -183,6 +189,11 @@ public class ParserTstUtil {
         return parseJava9(getSourceFromClass(source));
     }
 
+    /** @see #parseJava(LanguageVersionHandler, String)  */
+    public static ASTCompilationUnit parseJava10(Class<?> source) {
+        return parseJava10(getSourceFromClass(source));
+    }
+
     /** @see #parseJava(LanguageVersionHandler, String) */
     public static ASTCompilationUnit parseJavaDefaultVersion(String source) {
         return parseJava(getDefaultLanguageVersionHandler(), source);
@@ -194,12 +205,12 @@ public class ParserTstUtil {
     }
 
 
-    public static LanguageVersionHandler getLanguageVersionHandler(String version) {
-        return LanguageRegistry.getLanguage(JavaLanguageModule.NAME).getVersion(version).getLanguageVersionHandler();
+    public static AbstractJavaHandler getLanguageVersionHandler(String version) {
+        return (AbstractJavaHandler) LanguageRegistry.getLanguage(JavaLanguageModule.NAME).getVersion(version).getLanguageVersionHandler();
     }
 
-    public static LanguageVersionHandler getDefaultLanguageVersionHandler() {
-        return LanguageRegistry.getLanguage(JavaLanguageModule.NAME).getDefaultVersion().getLanguageVersionHandler();
+    public static AbstractJavaHandler getDefaultLanguageVersionHandler() {
+        return (AbstractJavaHandler) LanguageRegistry.getLanguage(JavaLanguageModule.NAME).getDefaultVersion().getLanguageVersionHandler();
     }
 
 
@@ -228,10 +239,23 @@ public class ParserTstUtil {
         }
         String source;
         try {
-            source = IOUtils.toString(is);
+            source = IOUtils.toString(is, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         return source;
+    }
+
+    public static ASTCompilationUnit parseAndTypeResolveJava(String javaVersion, String sourceCode) {
+        LanguageVersionHandler languageVersionHandler = getLanguageVersionHandler(javaVersion);
+        ASTCompilationUnit rootNode = (ASTCompilationUnit) languageVersionHandler
+                .getParser(languageVersionHandler.getDefaultParserOptions())
+                    .parse(null, new StringReader(sourceCode));
+        languageVersionHandler.getQualifiedNameResolutionFacade(ParserTstUtil.class.getClassLoader()).start(rootNode);
+        languageVersionHandler.getSymbolFacade().start(rootNode);
+        languageVersionHandler.getDataFlowFacade().start(rootNode);
+        languageVersionHandler.getTypeResolutionFacade(ParserTstUtil.class.getClassLoader()).start(rootNode);
+        languageVersionHandler.getMultifileFacade().start(rootNode);
+        return rootNode;
     }
 }

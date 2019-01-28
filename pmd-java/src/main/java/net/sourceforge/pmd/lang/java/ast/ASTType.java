@@ -5,6 +5,17 @@
 
 package net.sourceforge.pmd.lang.java.ast;
 
+/**
+ * Represents a type reference.
+ *
+ * <pre>
+ *
+ * Type ::= {@linkplain ASTReferenceType ReferenceType} | {@linkplain ASTPrimitiveType PrimitiveType}
+ *
+ * </pre>
+ *
+ * Note: it is not exactly the same the "UnnanType" defined in JLS.
+ */
 public class ASTType extends AbstractJavaTypeNode {
     public ASTType(int id) {
         super(id);
@@ -30,17 +41,32 @@ public class ASTType extends AbstractJavaTypeNode {
         return getFirstDescendantOfType(ASTPrimitiveType.class).getImage();
     }
 
+
+    @Deprecated
     public int getArrayDepth() {
         if (jjtGetNumChildren() != 0
                 && (jjtGetChild(0) instanceof ASTReferenceType || jjtGetChild(0) instanceof ASTPrimitiveType)) {
             return ((Dimensionable) jjtGetChild(0)).getArrayDepth();
         }
-        throw new RuntimeException("ASTType.getArrayDepth called, but first child (of " + jjtGetNumChildren()
-                + " total children) is neither a primitive nor a reference type.");
+        return 0; // this is not an array
     }
 
+
+    /**
+     *
+     * @deprecated Use {@link #isArrayType()}
+     */
+    @Deprecated
     public boolean isArray() {
+        return isArrayType();
+    }
+
+
+    /**
+     * Returns true if this type is an array type.
+     *
+     */
+    public boolean isArrayType() {
         return getArrayDepth() > 0;
     }
-
 }

@@ -3,7 +3,7 @@
 <ruleset name="Performance"
     xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.net/ruleset_2_0_0.xsd">
+    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
 
     <description>
 Rules that flag suboptimal code.
@@ -120,14 +120,22 @@ public class Test {
           class="net.sourceforge.pmd.lang.rule.XPathRule"
           externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_performance.html#avoidfilestream">
         <description>
-The FileInputStream and FileOutputStream classes contains a finalizer method which will cause garbage collection pauses. See [JDK-8080225](https://bugs.openjdk.java.net/browse/JDK-8080225) for details.
+The FileInputStream and FileOutputStream classes contains a finalizer method which will cause garbage
+collection pauses.
+See [JDK-8080225](https://bugs.openjdk.java.net/browse/JDK-8080225) for details.
 
-The FileReader and FileWriter constructors instantiate FileInputStream and FileOutputStream, again causing garbage collection issues while finalizer methods are called.
+The FileReader and FileWriter constructors instantiate FileInputStream and FileOutputStream,
+again causing garbage collection issues while finalizer methods are called.
 
 * Use `Files.newInputStream(Paths.get(fileName))` instead of `new FileInputStream(fileName)`.
 * Use `Files.newOutputStream(Paths.get(fileName))` instead of `new FileOutputStream(fileName)`.
 * Use `Files.newBufferedReader(Paths.get(fileName))` instead of `new FileReader(fileName)`.
 * Use `Files.newBufferedWriter(Paths.get(fileName))` instead of `new FileWriter(fileName)`.
+
+Please note, that the `java.nio` API does not throw a `FileNotFoundException` anymore, instead
+it throws a `NoSuchFileException`. If your code dealt explicitly with a `FileNotFoundException`,
+then this needs to be adjusted. Both exceptions are subclasses of `IOException`, so catching
+that one covers both.
         </description>
         <priority>1</priority>
         <properties>
@@ -135,10 +143,10 @@ The FileReader and FileWriter constructors instantiate FileInputStream and FileO
                 <value>
 <![CDATA[
 //PrimaryPrefix/AllocationExpression/ClassOrInterfaceType[
-       typeof(@Image, 'java.io.FileInputStream', 'FileInputStream')
-    or typeof(@Image, 'java.io.FileOutputStream', 'FileOutputStream')
-    or typeof(@Image, 'java.io.FileReader', 'FileReader')
-    or typeof(@Image, 'java.io.FileWriter', 'FileWriter')
+       pmd-java:typeIs('java.io.FileInputStream')
+    or pmd-java:typeIs('java.io.FileOutputStream')
+    or pmd-java:typeIs('java.io.FileReader')
+    or pmd-java:typeIs('java.io.FileWriter')
   ]
 ]]>
                 </value>
@@ -209,10 +217,10 @@ adverse impacts on performance.
 <![CDATA[
 //FieldDeclaration/Type/PrimitiveType[@Image = 'short']
 |
-//ClassOrInterfaceBodyDeclaration[not(Annotation/MarkerAnnotation/Name[typeof(@Image, 'java.lang.Override', 'Override')])]
+//ClassOrInterfaceBodyDeclaration[not(Annotation/MarkerAnnotation/Name[pmd-java:typeIs('java.lang.Override')])]
     /MethodDeclaration/ResultType/Type/PrimitiveType[@Image = 'short']
 |
-//ClassOrInterfaceBodyDeclaration[not(Annotation/MarkerAnnotation/Name[typeof(@Image, 'java.lang.Override', 'Override')])]
+//ClassOrInterfaceBodyDeclaration[not(Annotation/MarkerAnnotation/Name[pmd-java:typeIs('java.lang.Override')])]
     /MethodDeclaration/MethodDeclarator/FormalParameters/FormalParameter/Type/PrimitiveType[@Image = 'short']
 |
 //LocalVariableDeclaration/Type/PrimitiveType[@Image = 'short']
@@ -280,6 +288,7 @@ Boolean buz = Boolean.valueOf(false);    // ...., just reference Boolean.FALSE;
           since="4.0"
           message="Avoid instantiating Byte objects. Call Byte.valueOf() instead"
           class="net.sourceforge.pmd.lang.rule.XPathRule"
+          typeResolution="true"
           externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_performance.html#byteinstantiation">
         <description>
 Calling new Byte() causes memory allocation that can be avoided by the static Byte.valueOf().
@@ -291,10 +300,9 @@ Note that new Byte() is deprecated since JDK 9 for that reason.
             <property name="xpath">
                 <value>
 <![CDATA[
-//PrimaryPrefix/AllocationExpression
+//AllocationExpression
 [not (ArrayDimsAndInits)
-and (ClassOrInterfaceType/@Image='Byte'
-or ClassOrInterfaceType/@Image='java.lang.Byte')]
+and ClassOrInterfaceType[pmd-java:typeIs('java.lang.Byte')]]
 ]]>
                 </value>
             </property>
@@ -362,22 +370,39 @@ buf.append("1m");           // good
 
     <rule name="InefficientEmptyStringCheck"
           since="3.6"
-          message="String.trim().length()==0 is an inefficient way to validate an empty String."
+	  message="String.trim().length() == 0 / String.trim().isEmpty() is an inefficient way to validate a blank String."
           class="net.sourceforge.pmd.lang.java.rule.performance.InefficientEmptyStringCheckRule"
           externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_performance.html#inefficientemptystringcheck">
         <description>
-String.trim().length() is an inefficient way to check if a String is really empty, as it
-creates a new String object just to check its size. Consider creating a static function that
-loops through a string, checking Character.isWhitespace() on each character and returning
-false if a non-whitespace character is found. You can refer to Apache's StringUtils#isBlank (in commons-lang),
-Spring's StringUtils#hasText (in the Spring framework) or Google's CharMatcher#whitespace (in Guava) for
-existing implementations.
+<![CDATA[
+String.trim().length() == 0 (or String.trim().isEmpty() for the same reason) is an inefficient
+way to check if a String is really blank, as it creates a new String object just to check its size.
+Consider creating a static function that loops through a string, checking Character.isWhitespace()
+on each character and returning false if a non-whitespace character is found. A Smarter code to
+check for an empty string would be:
+
+```java
+private boolean checkTrimEmpty(String str) {
+    for(int i = 0; i < str.length(); i++) {
+        if(!Character.isWhitespace(str.charAt(i))) {
+            return false;
+        }
+    }
+    return true;
+}
+```
+
+You can refer to Apache's StringUtils#isBlank (in commons-lang),
+Spring's StringUtils#hasText (in the Spring framework) or Google's
+CharMatcher#whitespace (in Guava) for existing implementations (some might
+include the check for != null).
+]]>
         </description>
         <priority>3</priority>
         <example>
 <![CDATA[
 public void bar(String string) {
-    if (string != null && string.trim().size() > 0) {
+    if (string != null && string.trim().length() > 0) {
         doSomething();
     }
 }
@@ -436,6 +461,7 @@ good.append("This is a long string, which is pre-sized");
           since="3.5"
           message="Avoid instantiating Integer objects. Call Integer.valueOf() instead."
           class="net.sourceforge.pmd.lang.rule.XPathRule"
+          typeResolution="true"
           externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_performance.html#integerinstantiation">
         <description>
 Calling new Integer() causes memory allocation that can be avoided by the static Integer.valueOf().
@@ -447,11 +473,9 @@ Note that new Integer() is deprecated since JDK 9 for that reason.
             <property name="xpath">
                 <value>
 <![CDATA[
-//PrimaryPrefix
- /AllocationExpression
+//AllocationExpression
   [not (ArrayDimsAndInits)
-   and (ClassOrInterfaceType/@Image='Integer'
-    or ClassOrInterfaceType/@Image='java.lang.Integer')]
+   and ClassOrInterfaceType[pmd-java:typeIs('java.lang.Integer')]]
 ]]>
                 </value>
             </property>
@@ -470,6 +494,7 @@ public class Foo {
           since="4.0"
           message="Avoid instantiating Long objects.Call Long.valueOf() instead"
           class="net.sourceforge.pmd.lang.rule.XPathRule"
+          typeResolution="true"
           externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_performance.html#longinstantiation">
         <description>
 Calling new Long() causes memory allocation that can be avoided by the static Long.valueOf().
@@ -481,11 +506,9 @@ Note that new Long() is deprecated since JDK 9 for that reason.
             <property name="xpath">
                 <value>
 <![CDATA[
-//PrimaryPrefix
-/AllocationExpression
+//AllocationExpression
 [not (ArrayDimsAndInits)
-and (ClassOrInterfaceType/@Image='Long'
-or ClassOrInterfaceType/@Image='java.lang.Long')]
+and ClassOrInterfaceType[pmd-java:typeIs('java.lang.Long')]]
 ]]>
                 </value>
             </property>
@@ -635,6 +658,7 @@ public class Foo {
           since="4.0"
           message="Avoid instantiating Short objects. Call Short.valueOf() instead"
           class="net.sourceforge.pmd.lang.rule.XPathRule"
+          typeResolution="true"
           externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_performance.html#shortinstantiation">
         <description>
 Calling new Short() causes memory allocation that can be avoided by the static Short.valueOf().
@@ -646,11 +670,9 @@ Note that new Short() is deprecated since JDK 9 for that reason.
             <property name="xpath">
                 <value>
 <![CDATA[
-//PrimaryPrefix
-/AllocationExpression
+//AllocationExpression
 [not (ArrayDimsAndInits)
-and (ClassOrInterfaceType/@Image='Short'
-or ClassOrInterfaceType/@Image='java.lang.Short')]
+and ClassOrInterfaceType[pmd-java:typeIs('java.lang.Short')]]
 ]]>
                 </value>
             </property>
@@ -848,9 +870,9 @@ You must use new ArrayList<>(Arrays.asList(...)) if that is inconvenient for you
    and
    PrimaryExpression/PrimarySuffix/Arguments/ArgumentList/Expression/PrimaryExpression/PrimaryPrefix/Name
    [
-     @Image = ancestor::MethodDeclaration//LocalVariableDeclaration[@Array="true"]/VariableDeclarator/VariableDeclaratorId/@Image
+     @Image = ancestor::MethodDeclaration[1]//LocalVariableDeclaration/VariableDeclarator/VariableDeclaratorId[@ArrayType="true"]/@Image
      or
-     @Image = ancestor::MethodDeclaration//FormalParameter/VariableDeclaratorId/@Image
+     @Image = ancestor::MethodDeclaration[1]//FormalParameter/VariableDeclaratorId/@Image
    ]
    /../..[count(.//PrimarySuffix)
    =1]/PrimarySuffix/Expression/PrimaryExpression/PrimaryPrefix
@@ -921,7 +943,7 @@ public String convert(int i) {
 
     <rule name="UseStringBufferForStringAppends"
           since="3.1"
-          message="Prefer StringBuffer over += for concatenating strings"
+          message="Prefer StringBuilder (non-synchronized) or StringBuffer (synchronized) over += for concatenating strings"
           class="net.sourceforge.pmd.lang.java.rule.performance.UseStringBufferForStringAppendsRule"
           externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_performance.html#usestringbufferforstringappends">
         <description>
@@ -939,7 +961,7 @@ public class Foo {
         a += " bar";
         // better would be:
         // StringBuilder a = new StringBuilder("foo");
-        // a.append(" bar);
+        // a.append(" bar");
     }
 }
 ]]>

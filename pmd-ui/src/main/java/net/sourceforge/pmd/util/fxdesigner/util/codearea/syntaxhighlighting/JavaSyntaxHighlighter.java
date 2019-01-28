@@ -10,6 +10,7 @@ import static net.sourceforge.pmd.util.fxdesigner.util.codearea.syntaxhighlighti
 import static net.sourceforge.pmd.util.fxdesigner.util.codearea.syntaxhighlighting.HighlightClasses.BRACKET;
 import static net.sourceforge.pmd.util.fxdesigner.util.codearea.syntaxhighlighting.HighlightClasses.CHAR;
 import static net.sourceforge.pmd.util.fxdesigner.util.codearea.syntaxhighlighting.HighlightClasses.CLASS_IDENTIFIER;
+import static net.sourceforge.pmd.util.fxdesigner.util.codearea.syntaxhighlighting.HighlightClasses.IDENTIFIER;
 import static net.sourceforge.pmd.util.fxdesigner.util.codearea.syntaxhighlighting.HighlightClasses.KEYWORD;
 import static net.sourceforge.pmd.util.fxdesigner.util.codearea.syntaxhighlighting.HighlightClasses.MULTIL_COMMENT;
 import static net.sourceforge.pmd.util.fxdesigner.util.codearea.syntaxhighlighting.HighlightClasses.NULL;
@@ -43,7 +44,7 @@ public final class JavaSyntaxHighlighter extends SimpleRegexSyntaxHighlighter {
         "switch", "synchronized", "transient", "try", "volatile",
         "do", "strictfp", "goto", "const", "open", 
         "module", "requires", "transitive", "exports", 
-        "opens", "to", "uses", "provides", "with",
+        "opens", "to", "uses", "provides", "var", "with",
         };
 
 
@@ -51,7 +52,7 @@ public final class JavaSyntaxHighlighter extends SimpleRegexSyntaxHighlighter {
         = grammarBuilder(SINGLEL_COMMENT.css, "//[^\n]*")
         .or(MULTIL_COMMENT.css, "/\\*.*?\\*/")
         .or(PAREN.css, "[()]")
-        .or(NUMBER.css, asWord("\\d+[fdlFDL]*"))
+        .or(NUMBER.css, asWord("\\d[_\\d]*+(\\.\\d(_?\\d)*+)?[fdlFDL]?"))
         .or(BRACE.css, "[{}]")
         .or(BRACKET.css, "[\\[]]")
         .or(SEMICOLON.css, ";")
@@ -62,6 +63,7 @@ public final class JavaSyntaxHighlighter extends SimpleRegexSyntaxHighlighter {
         .or(BOOLEAN.css, asWord("true|false"))
         .or(ANNOTATION.css, "@[\\w]+")
         .or(CLASS_IDENTIFIER.css, asWord("[A-Z][\\w_$]*"))
+        .or(IDENTIFIER.css, asWord("[\\w_$]+"))
         .create(Pattern.DOTALL);
 
 

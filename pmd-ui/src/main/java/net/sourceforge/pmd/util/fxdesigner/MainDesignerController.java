@@ -5,14 +5,14 @@
 package net.sourceforge.pmd.util.fxdesigner;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.ResourceBundle;
+import java.util.Optional;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
@@ -21,11 +21,14 @@ import org.reactfx.value.Val;
 
 import net.sourceforge.pmd.lang.LanguageVersion;
 import net.sourceforge.pmd.lang.ast.Node;
-import net.sourceforge.pmd.lang.symboltable.NameDeclaration;
 import net.sourceforge.pmd.lang.symboltable.NameOccurrence;
+import net.sourceforge.pmd.util.fxdesigner.model.XPathEvaluationException;
+import net.sourceforge.pmd.util.fxdesigner.popups.EventLogController;
+import net.sourceforge.pmd.util.fxdesigner.util.AbstractController;
 import net.sourceforge.pmd.util.fxdesigner.util.DesignerUtil;
 import net.sourceforge.pmd.util.fxdesigner.util.LimitedSizeStack;
-import net.sourceforge.pmd.util.fxdesigner.util.beans.SettingsOwner;
+import net.sourceforge.pmd.util.fxdesigner.util.SoftReferenceCache;
+import net.sourceforge.pmd.util.fxdesigner.util.TextAwareNodeWrapper;
 import net.sourceforge.pmd.util.fxdesigner.util.beans.SettingsPersistenceUtil;
 import net.sourceforge.pmd.util.fxdesigner.util.beans.SettingsPersistenceUtil.PersistentProperty;
 
@@ -35,11 +38,8 @@ import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;
 import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
-import javafx.scene.control.Button;
-import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.CustomMenuItem;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
@@ -67,14 +67,19 @@ import javafx.util.Duration;
  * @since 6.0.0
  */
 @SuppressWarnings("PMD.UnusedPrivateField")
-public class MainDesignerController implements Initializable, SettingsOwner {
+public class MainDesignerController extends AbstractController {
 
     /**
      * Callback to the owner.
      */
     private final DesignerRoot designerRoot;
 
+
     /* Menu bar */
+    @FXML
+    private MenuItem setupAuxclasspathMenuItem;
+    @FXML
+    public MenuItem openEventLogMenuItem;
     @FXML
     private MenuItem openFileMenuItem;
     @FXML
@@ -82,25 +87,13 @@ public class MainDesignerController implements Initializable, SettingsOwner {
     @FXML
     private Menu openRecentMenu;
     @FXML
-    private MenuItem exportToTestCodeMenuItem;
-    @FXML
-    private MenuItem exportXPathMenuItem;
-    @FXML
     private Menu fileMenu;
     /* Center toolbar */
-    @FXML
-    private Button refreshASTButton;
-    @FXML
-    private ChoiceBox<LanguageVersion> languageChoiceBox;
-    @FXML
-    private ChoiceBox<String> xpathVersionChoiceBox;
     @FXML
     private ToggleButton bottomTabsToggle;
     /* Bottom panel */
     @FXML
     private TabPane bottomTabPane;
-    @FXML
-    private Tab eventLogTab;
     @FXML
     private Tab xpathEditorTab;
     @FXML
@@ -112,23 +105,20 @@ public class MainDesignerController implements Initializable, SettingsOwner {
     private XPathPanelController xpathPanelController;
     @FXML
     private SourceEditorController sourceEditorController;
-    @FXML
-    private EventLogController eventLogPanelController;
+    // we cache it but if it's not used the FXML is not created, etc
+    private final SoftReferenceCache<EventLogController> eventLogController;
 
     // Other fields
-    private Stack<File> recentFiles = new LimitedSizeStack<>(5);
-    // Properties
-    private Val<LanguageVersion> languageVersion = Val.constant(DesignerUtil.defaultLanguageVersion());
-    private Val<String> xpathVersion = Val.constant(DesignerUtil.defaultXPathVersion());
+    private final Stack<File> recentFiles = new LimitedSizeStack<>(5);
 
 
     public MainDesignerController(DesignerRoot owner) {
         this.designerRoot = owner;
+        eventLogController = new SoftReferenceCache<>(() -> new EventLogController(owner, this));
     }
 
-
     @Override
-    public void initialize(URL location, ResourceBundle resources) {
+    protected void beforeParentInit() {
         try {
             SettingsPersistenceUtil.restoreProperties(this, DesignerUtil.getSettingsFile());
         } catch (Exception e) {
@@ -137,53 +127,29 @@ public class MainDesignerController implements Initializable, SettingsOwner {
             e.printStackTrace();
         }
 
-        initializeLanguageVersionMenu();
         initializeViewAnimation();
 
-        xpathPanelController.initialiseVersionChoiceBox(xpathVersionChoiceBox);
-
-        languageVersion = Val.wrap(languageChoiceBox.getSelectionModel().selectedItemProperty());
-        DesignerUtil.rewire(sourceEditorController.languageVersionProperty(),
-                            languageVersion, this::setLanguageVersion);
-
-        xpathVersion = Val.wrap(xpathVersionChoiceBox.getSelectionModel().selectedItemProperty());
-        DesignerUtil.rewire(xpathPanelController.xpathVersionProperty(),
-                            xpathVersion, this::setXpathVersion);
-
-        refreshASTButton.setOnAction(e -> onRefreshASTClicked());
         licenseMenuItem.setOnAction(e -> showLicensePopup());
         openFileMenuItem.setOnAction(e -> onOpenFileClicked());
         openRecentMenu.setOnAction(e -> updateRecentFilesMenu());
         openRecentMenu.setOnShowing(e -> updateRecentFilesMenu());
         fileMenu.setOnShowing(e -> onFileMenuShowing());
-        exportXPathMenuItem.setOnAction(e -> {
-            try {
-                xpathPanelController.showExportXPathToRuleWizard();
-            } catch (IOException e1) {
-                e1.printStackTrace();
-            }
-        });
 
-        sourceEditorController.refreshAST();
-        xpathPanelController.evaluateXPath(sourceEditorController.getCompilationUnit(),
-                                           getLanguageVersion());
-        Platform.runLater(() -> sourceEditorController.moveCaret(0, 0));
-        Platform.runLater(() -> { // fixes choicebox bad rendering on first opening
-            languageChoiceBox.show();
-            languageChoiceBox.hide();
-        });
+        setupAuxclasspathMenuItem.setOnAction(e -> sourceEditorController.showAuxclasspathSetupPopup(designerRoot));
+
+        openEventLogMenuItem.setOnAction(e -> eventLogController.getValue().showPopup());
+        openEventLogMenuItem.textProperty().bind(
+            designerRoot.getLogger().numNewLogEntriesProperty().map(i -> "Exception log (" + (i > 0 ? i : "no") + " new)")
+        );
+
     }
 
 
-    private void initializeLanguageVersionMenu() {
-        List<LanguageVersion> supported = DesignerUtil.getSupportedLanguageVersions();
-        supported.sort(LanguageVersion::compareTo);
-        languageChoiceBox.getItems().addAll(supported);
-
-        languageChoiceBox.setConverter(DesignerUtil.languageVersionStringConverter());
-
-        languageChoiceBox.getSelectionModel().select(DesignerUtil.defaultLanguageVersion());
-        languageChoiceBox.show();
+    @Override
+    protected void afterChildrenInit() {
+        updateRecentFilesMenu();
+        refreshAST(); // initial refreshing
+        sourceEditorController.moveCaret(0, 0);
     }
 
 
@@ -219,16 +185,38 @@ public class MainDesignerController implements Initializable, SettingsOwner {
             // nevermind
             ioe.printStackTrace();
         }
-
-        sourceEditorController.shutdown(); // shutdown syntax highlighting
-        xpathPanelController.shutdown();
     }
 
 
-    private void onRefreshASTClicked() {
-        sourceEditorController.refreshAST();
-        xpathPanelController.evaluateXPath(sourceEditorController.getCompilationUnit(),
-                                           getLanguageVersion());
+    /**
+     * Attempts to refresh the AST with the up-to-date source,
+     * also updating XPath results.
+     */
+    public void refreshAST() {
+        Optional<Node> root = sourceEditorController.refreshAST();
+
+        if (root.isPresent()) {
+            xpathPanelController.evaluateXPath(root.get(), getLanguageVersion());
+        } else {
+            xpathPanelController.invalidateResults(true);
+        }
+    }
+
+    /**
+     * Refreshes the XPath results if the compilation unit is valid.
+     * Otherwise does nothing.
+     */
+    public void refreshXPathResults() {
+        sourceEditorController.getCompilationUnit().ifPresent(root -> xpathPanelController.evaluateXPath(root, getLanguageVersion()));
+    }
+
+
+    /**
+     * Returns a wrapper around the given node that gives access
+     * to its textual representation in the editor area.
+     */
+    public TextAwareNodeWrapper wrapNode(Node node) {
+        return sourceEditorController.wrapNode(node);
     }
 
 
@@ -236,26 +224,70 @@ public class MainDesignerController implements Initializable, SettingsOwner {
      * Executed when the user selects a node in a treeView or listView.
      */
     public void onNodeItemSelected(Node selectedValue) {
-        nodeInfoPanelController.displayInfo(selectedValue);
-        sourceEditorController.clearNodeHighlight();
-        sourceEditorController.highlightNodePrimary(selectedValue);
-        sourceEditorController.focusNodeInTreeView(selectedValue);
+        onNodeItemSelected(selectedValue, false);
     }
 
 
-    public void onNameDeclarationSelected(NameDeclaration declaration) {
-        sourceEditorController.clearNodeHighlight();
-
-        List<NameOccurrence> occ = declaration.getNode().getScope().getDeclarations().get(declaration);
-        if (occ != null) {
-            sourceEditorController.highlightNodesSecondary(occ.stream()
-                                                              .map(NameOccurrence::getLocation)
-                                                              .collect(Collectors.toList()));
-        }
-
-        sourceEditorController.highlightNodePrimary(declaration.getNode());
+    /**
+     * Executed when the user selects a node in a treeView or listView.
+     *
+     * @param isFromNameDecl Whether the node was selected in the scope hierarchy treeview
+     */
+    public void onNodeItemSelected(Node selectedValue, boolean isFromNameDecl) {
+        // doing that in parallel speeds it up
+        Platform.runLater(() -> nodeInfoPanelController.setFocusNode(selectedValue, isFromNameDecl));
+        Platform.runLater(() -> sourceEditorController.setFocusNode(selectedValue));
     }
 
+
+    /**
+     * Highlight a list of name occurrences.
+     *
+     * @param occurrences May be empty but never null.
+     */
+    public void highlightAsNameOccurences(List<NameOccurrence> occurrences) {
+        sourceEditorController.highlightNameOccurrences(occurrences);
+    }
+
+    /**
+     * Runs an XPath (2.0) query on the current AST.
+     * Performs no side effects.
+     *
+     * @param query the query
+     * @return the matched nodes
+     * @throws XPathEvaluationException if the query fails
+     */
+    public List<Node> runXPathQuery(String query) throws XPathEvaluationException {
+        return sourceEditorController.getCompilationUnit()
+                                     .map(n -> xpathPanelController.runXPathQuery(n, getLanguageVersion(), query))
+                                     .orElseGet(Collections::emptyList);
+    }
+
+
+    /**
+     * Handles nodes that potentially caused an error.
+     * This can for example highlight nodes on the
+     * editor. Effects can be reset with {@link #resetSelectedErrorNodes()}.
+     *
+     * @param n Node
+     */
+    public void handleSelectedNodeInError(List<Node> n) {
+        resetSelectedErrorNodes();
+        sourceEditorController.highlightErrorNodes(n);
+    }
+
+    public void resetSelectedErrorNodes() {
+        sourceEditorController.clearErrorNodes();
+    }
+
+    public void resetXPathResults() {
+        sourceEditorController.clearXPathHighlight();
+    }
+
+    /** Replaces previously highlighted XPath results with the given nodes. */
+    public void highlightXPathResults(List<Node> nodes) {
+        sourceEditorController.highlightXPathResults(nodes);
+    }
 
     private void showLicensePopup() {
         Alert licenseAlert = new Alert(AlertType.INFORMATION);
@@ -264,7 +296,8 @@ public class MainDesignerController implements Initializable, SettingsOwner {
 
         ScrollPane scroll = new ScrollPane();
         try {
-            scroll.setContent(new TextArea(IOUtils.toString(getClass().getResourceAsStream("LICENSE"))));
+            scroll.setContent(new TextArea(IOUtils.toString(getClass().getResourceAsStream("LICENSE"),
+                    StandardCharsets.UTF_8)));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -284,18 +317,17 @@ public class MainDesignerController implements Initializable, SettingsOwner {
         chooser.setTitle("Load source from file");
         File file = chooser.showOpenDialog(designerRoot.getMainStage());
         loadSourceFromFile(file);
-        sourceEditorController.clearStyleLayers();
     }
 
     private void loadSourceFromFile(File file) {
         if (file != null) {
             try {
-                String source = IOUtils.toString(new FileInputStream(file));
+                String source = IOUtils.toString(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8);
                 sourceEditorController.setText(source);
                 LanguageVersion guess = DesignerUtil.getLanguageVersionFromExtension(file.getName());
                 if (guess != null) { // guess the language from the extension
-                    languageChoiceBox.getSelectionModel().select(guess);
-                    onRefreshASTClicked();
+                    sourceEditorController.setLanguageVersion(guess);
+                    refreshAST();
                 }
 
                 recentFiles.push(file);
@@ -344,63 +376,35 @@ public class MainDesignerController implements Initializable, SettingsOwner {
 
 
     public void invalidateAst() {
-        nodeInfoPanelController.invalidateInfo();
+        nodeInfoPanelController.setFocusNode(null);
         xpathPanelController.invalidateResults(false);
-        sourceEditorController.clearNodeHighlight();
+        sourceEditorController.setFocusNode(null);
     }
 
 
     public LanguageVersion getLanguageVersion() {
-        return languageVersion.getValue();
+        return sourceEditorController.getLanguageVersion();
     }
 
 
     public void setLanguageVersion(LanguageVersion version) {
-        if (languageChoiceBox.getItems().contains(version)) {
-            languageChoiceBox.getSelectionModel().select(version);
-        }
+        sourceEditorController.setLanguageVersion(version);
     }
 
 
     public Val<LanguageVersion> languageVersionProperty() {
-        return languageVersion;
-    }
-
-
-    public String getXpathVersion() {
-        return xpathVersion.getValue();
-    }
-
-
-    public void setXpathVersion(String version) {
-        if (xpathVersionChoiceBox.getItems().contains(version)) {
-            xpathVersionChoiceBox.getSelectionModel().select(version);
-        }
-    }
-
-
-    public Val<String> xpathVersionProperty() {
-        return xpathVersion;
+        return sourceEditorController.languageVersionProperty();
     }
 
 
     @PersistentProperty
     public String getRecentFiles() {
-        StringBuilder sb = new StringBuilder();
-        for (File f : recentFiles) {
-            sb.append(',').append(f.getAbsolutePath());
-        }
-        return sb.length() > 0 ? sb.substring(1) : "";
+        return recentFiles.stream().map(File::getAbsolutePath).collect(Collectors.joining(File.pathSeparator));
     }
 
 
     public void setRecentFiles(String files) {
-        List<String> fileNames = Arrays.asList(files.split(","));
-        Collections.reverse(fileNames);
-        for (String fileName : fileNames) {
-            File f = new File(fileName);
-            recentFiles.push(f);
-        }
+        Arrays.stream(files.split(File.pathSeparator)).map(File::new).forEach(recentFiles::push);
     }
 
 
@@ -434,12 +438,14 @@ public class MainDesignerController implements Initializable, SettingsOwner {
 
 
     public void setBottomTabIndex(int i) {
-        bottomTabPane.getSelectionModel().select(i);
+        if (i >= 0 && i < bottomTabPane.getTabs().size()) {
+            bottomTabPane.getSelectionModel().select(i);
+        }
     }
 
 
     @Override
-    public List<SettingsOwner> getChildrenSettingsNodes() {
-        return Arrays.asList(xpathPanelController, sourceEditorController);
+    public List<AbstractController> getChildren() {
+        return Arrays.asList(xpathPanelController, sourceEditorController, nodeInfoPanelController);
     }
 }

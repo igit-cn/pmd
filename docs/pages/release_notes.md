@@ -4,28 +4,21 @@ permalink: pmd_release_notes.html
 keywords: changelog, release notes
 ---
 
-## ????? - 6.4.0-SNAPSHOT
+## {{ site.pmd.date }} - {{ site.pmd.version }}
 
-The PMD team is pleased to announce PMD 6.4.0.
+The PMD team is pleased to announce PMD {{ site.pmd.version }}.
 
-This is a bug fixing release.
+This is a {{ site.pmd.release_type }} release.
 
-### Table Of Contents
-
-* [New and noteworthy](#new-and-noteworthy)
-* [Fixed Issues](#fixed-issues)
-* [API Changes](#api-changes)
-* [External Contributions](#external-contributions)
+{% tocmaker is_release_notes_processor %}
 
 ### New and noteworthy
 
 ### Fixed Issues
 
-*   java-bestpractices
-    *   [#1063](https://github.com/pmd/pmd/issues/1063): \[java] MissingOverride is triggered in illegal places
-*   java-codestyle
-    *   [#1065](https://github.com/pmd/pmd/issues/1065): \[java] ClassNamingConventions shouldn't prohibit numbers in class names
-
 ### API Changes
 
 ### External Contributions
+
+{% endtocmaker %}
+

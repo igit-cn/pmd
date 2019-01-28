@@ -5,6 +5,7 @@
 package net.sourceforge.pmd.it;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
@@ -59,6 +60,7 @@ public class BinaryDistributionIT {
         Set<String> result = new HashSet<>();
         String basedir = "pmd-bin-" + PMDVersion.VERSION + "/";
         result.add(basedir);
+        result.add(basedir + "LICENSE");
         result.add(basedir + "bin/run.sh");
         result.add(basedir + "bin/pmd.bat");
         result.add(basedir + "bin/cpd.bat");
@@ -81,7 +83,9 @@ public class BinaryDistributionIT {
 
         zip.close();
 
-        assertTrue(expectedFileNames.isEmpty());
+        if (!expectedFileNames.isEmpty()) {
+            fail("Missing files in archive: " + expectedFileNames);
+        }
     }
 
     @Test
@@ -93,11 +97,11 @@ public class BinaryDistributionIT {
         result = PMDExecutor.runPMD(tempDir, "-h");
         result.assertExecutionResult(1, "apex, ecmascript, java, jsp, plsql, pom, vf, vm, wsdl, xml, xsl");
 
-        result = PMDExecutor.runPMDRules(tempDir, srcDir, "java-basic");
+        result = PMDExecutor.runPMDRules(tempDir, srcDir, "src/test/resources/rulesets/sample-ruleset.xml");
         result.assertExecutionResult(4, "JumbledIncrementer.java:8:");
 
-        result = PMDExecutor.runPMDRules(tempDir, srcDir, "java-design");
-        result.assertExecutionResult(0, "");
+        result = PMDExecutor.runPMDRules(tempDir, srcDir, "rulesets/java/quickstart.xml");
+        result.assertExecutionResult(4, "");
     }
 
     @Test
@@ -108,7 +112,7 @@ public class BinaryDistributionIT {
 
         result = CpdExecutor.runCpd(tempDir, "-h");
 
-        result.assertExecutionResult(1, "Supported languages: [apex, cpp, cs, ecmascript, fortran, go, groovy, java, jsp, matlab, objectivec, perl, php, plsql, python, ruby, scala, swift, vf]");
+        result.assertExecutionResult(1, "Supported languages: [apex, cpp, cs, ecmascript, fortran, go, groovy, java, jsp, kotlin, matlab, objectivec, perl, php, plsql, python, ruby, scala, swift, vf]");
 
         result = CpdExecutor.runCpd(tempDir, "--minimum-tokens", "10", "--format", "text", "--files", srcDir);
         result.assertExecutionResult(4, "Found a 10 line (55 tokens) duplication in the following files:");

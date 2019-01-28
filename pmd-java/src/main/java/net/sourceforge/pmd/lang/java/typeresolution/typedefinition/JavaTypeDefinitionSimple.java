@@ -100,8 +100,8 @@ import java.util.logging.Logger;
     @Override
     public JavaTypeDefinition getGenericType(final String parameterName) {
         for (JavaTypeDefinition currTypeDef = this; currTypeDef != null;
-             currTypeDef = currTypeDef.getEnclosingClass()) {
-            
+                currTypeDef = currTypeDef.getEnclosingClass()) {
+
             int paramIndex = getGenericTypeIndex(currTypeDef.getType().getTypeParameters(), parameterName);
             if (paramIndex != -1) {
                 return currTypeDef.getGenericType(paramIndex);
@@ -111,16 +111,16 @@ import java.util.logging.Logger;
         // throw because we could not find parameterName
         StringBuilder builder = new StringBuilder("No generic parameter by name ").append(parameterName);
         for (JavaTypeDefinition currTypeDef = this; currTypeDef != null;
-             currTypeDef = currTypeDef.getEnclosingClass()) {
-            
+                currTypeDef = currTypeDef.getEnclosingClass()) {
+
             builder.append("\n on class ");
-            builder.append(clazz.getSimpleName());
+            builder.append(currTypeDef.getType().getSimpleName());
         }
 
         LOG.log(Level.FINE, builder.toString());
         // TODO: throw eventually
         //throw new IllegalArgumentException(builder.toString());
-        return null;
+        return forClass(Object.class);
     }
 
     @Override
@@ -137,7 +137,7 @@ import java.util.logging.Logger;
         for (int i = genericArgs.size(); i <= index; i++) {
             genericArgs.add(null);
         }
-        
+
         /*
          * Set a default to circuit-brake any recursions (ie: raw types with no generic info)
          * Object.class is a right answer in those scenarios
@@ -241,14 +241,17 @@ import java.util.logging.Logger;
                 : forClass(Array.newInstance(getType(), (int[]) Array.newInstance(int.class, numDimensions)).getClass());
     }
 
+    @Override
     public boolean isClassOrInterface() {
         return !clazz.isEnum() && !clazz.isPrimitive() && !clazz.isAnnotation() && !clazz.isArray();
     }
 
+    @Override
     public boolean isNullType() {
         return false;
     }
 
+    @Override
     public boolean isPrimitive() {
         return clazz.isPrimitive();
     }
@@ -258,10 +261,12 @@ import java.util.logging.Logger;
         return clazz.equals(def.getType()) && getTypeParameterCount() == def.getTypeParameterCount();
     }
 
+    @Override
     public boolean hasSameErasureAs(JavaTypeDefinition def) {
         return clazz == def.getType();
     }
 
+    @Override
     public int getTypeParameterCount() {
         return typeParameterCount;
     }
@@ -272,21 +277,24 @@ import java.util.logging.Logger;
         final StringBuilder sb = new StringBuilder("JavaTypeDefinition [clazz=").append(clazz)
                 .append(", definitionType=").append(getDefinitionType())
                 .append(", genericArgs=[");
-        
+
         // Forcefully resolve all generic types
         for (int i = 0; i < genericArgs.size(); i++) {
             getGenericType(i);
         }
-        
+
         for (final JavaTypeDefinition jtd : genericArgs) {
             sb.append(jtd.shallowString()).append(", ");
         }
-        
-        return sb.replace(sb.length() - 3, sb.length() - 1, "]") // last comma to bracket
-            .append(", isGeneric=").append(isGeneric)
+
+        if (!genericArgs.isEmpty()) {
+            sb.replace(sb.length() - 3, sb.length() - 1, "");   // remove last comma
+        }
+
+        return sb.append("], isGeneric=").append(isGeneric)
             .append("]\n").toString();
     }
-    
+
     @Override
     public String shallowString() {
         return new StringBuilder("JavaTypeDefinition [clazz=").append(clazz)
@@ -354,6 +362,7 @@ import java.util.logging.Logger;
         return destinationSet;
     }
 
+    @Override
     public Set<Class<?>> getErasedSuperTypeSet() {
         Set<Class<?>> result = new HashSet<>();
         result.add(Object.class);

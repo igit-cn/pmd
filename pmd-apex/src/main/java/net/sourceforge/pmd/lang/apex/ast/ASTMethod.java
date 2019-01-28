@@ -17,13 +17,14 @@ public class ASTMethod extends AbstractApexNode<Method> implements ApexQualifiab
         super(method);
     }
 
+    @Override
     public Object jjtAccept(ApexParserVisitor visitor, Object data) {
         return visitor.visit(this, data);
     }
 
     @Override
     public String getImage() {
-        return node.getMethodInfo().getCanonicalName();
+        return node.getMethodInfo().getName();
     }
 
     @Override
