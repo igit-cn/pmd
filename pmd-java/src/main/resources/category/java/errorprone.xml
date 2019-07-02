@@ -1008,23 +1008,44 @@ public class MyClass implements Cloneable{
           class="net.sourceforge.pmd.lang.java.rule.errorprone.CloseResourceRule"
           externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_errorprone.html#closeresource">
         <description>
-Ensure that resources (like Connection, Statement, and ResultSet objects) are always closed after use.
+Ensure that resources (like `java.sql.Connection`, `java.sql.Statement`, and `java.sql.ResultSet` objects
+and any subtype of `java.lang.AutoCloseable`) are always closed after use.
+Failing to do so might result in resource leaks.
+
+Note: It suffices to configure the super type, e.g. `java.lang.AutoClosable`, so that this rule automatically triggers
+on any subtype (e.g. `java.io.FileInputStream`). Additionally specifying `java.sql.Connection` helps in detecting
+the types, if the type resolution / auxclasspath is not correctly setup.
+
+Note: Since PMD 6.16.0 the default value for the property `types` contains `java.lang.AutoCloseable` and detects
+now cases where the standard `java.io.*Stream` classes are involved. In order to restore the old behaviour,
+just remove "AutoCloseable" from the types.
         </description>
         <priority>3</priority>
         <example>
 <![CDATA[
 public class Bar {
-  public void foo() {
-    Connection c = pool.getConnection();
-    try {
-      // do stuff
-    } catch (SQLException ex) {
-     // handle exception
-    } finally {
-      // oops, should close the connection using 'close'!
-      // c.close();
+    public void withSQL() {
+        Connection c = pool.getConnection();
+        try {
+            // do stuff
+        } catch (SQLException ex) {
+           // handle exception
+        } finally {
+            // oops, should close the connection using 'close'!
+            // c.close();
+        }
     }
-  }
+
+    public void withFile() {
+        InputStream file = new FileInputStream(new File("/tmp/foo"));
+        try {
+            int c = file.in();
+        } catch (IOException e) {
+            // handle exception
+        } finally {
+            // TODO: close file
+        }
+    }
 }
 ]]>
         </example>
@@ -1112,6 +1133,59 @@ public void foo() {
   foo(buz);
   buz = 2;
 } // buz is undefined when leaving scope -> du-anomaly
+]]>
+        </example>
+    </rule>
+
+    <rule name="DetachedTestCase"
+          language="java"
+          since="6.13.0"
+          message="Probable detached JUnit test case."
+          class="net.sourceforge.pmd.lang.rule.XPathRule"
+          typeResolution="true"
+          externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_errorprone.html#detachedtestcase">
+        <description>
+The method appears to be a test case since it has public or default visibility,
+non-static access, no arguments, no return value, has no annotations, but is a
+member of a class that has one or more JUnit test cases. If it is a utility
+method, it should likely have private visibility. If it is an ignored test, it
+should be annotated with @Test and @Ignore.
+        </description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//ClassOrInterfaceBodyDeclaration
+[../ClassOrInterfaceBodyDeclaration/Annotation/*/Name
+        [pmd-java:typeIs('org.junit.Test')
+         or pmd-java:typeIs('org.junit.jupiter.api.Test')
+         or pmd-java:typeIs('org.junit.jupiter.api.RepeatedTest')
+         or pmd-java:typeIs('org.junit.jupiter.api.TestFactory')
+         or pmd-java:typeIs('org.junit.jupiter.api.TestTemplate')
+         or pmd-java:typeIs('org.junit.jupiter.params.ParameterizedTest')]
+]
+[not(Annotation)]
+[MethodDeclaration[(@Public = true() or @PackagePrivate = true()) and @Static = false() and
+        ResultType[@Void = true()] and
+        MethodDeclarator/FormalParameters[@ParameterCount = 0]
+    ]
+]
+]]></value>
+            </property>
+            <property name="version" value="2.0" />
+        </properties>
+        <example>
+<![CDATA[
+public class MyTest {
+    @Test
+    public void someTest() {
+    }
+
+    // violation: Not annotated
+    public void someOtherTest () {
+    }
+
+}
 ]]>
         </example>
     </rule>
@@ -2127,9 +2201,13 @@ public class Foo extends TestCase {
           since="2.0"
           message="The Logger variable declaration does not contain the static and final modifiers"
           class="net.sourceforge.pmd.lang.rule.XPathRule"
-          externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_errorprone.html#loggerisnotstaticfinal">
+          externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_errorprone.html#loggerisnotstaticfinal"
+          deprecated="true">
         <description>
 In most cases, the Logger reference can be declared as static and final.
+
+This rule is deprecated and will be removed with PMD 7.0.0.
+The rule is replaced by {% rule java/errorprone/ProperLogger %}.
         </description>
         <priority>2</priority>
         <properties>
@@ -2448,10 +2526,11 @@ confusing.
         </description>
         <priority>3</priority>
         <properties>
+            <property name="version" value="2.0" />
             <property name="xpath">
                 <value>
 <![CDATA[
-//Initializer[@Static='false']
+//Initializer[@Static=false()][not(ancestor::*[3][self::AllocationExpression or self::EnumConstant])]
 ]]>
                 </value>
             </property>
@@ -2572,31 +2651,50 @@ class Foo{
           since="3.3"
           message="Logger should be defined private static final and have the correct class"
           class="net.sourceforge.pmd.lang.rule.XPathRule"
-          externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_errorprone.html#properlogger">
+          externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_errorprone.html#properlogger"
+          typeResolution="true">
         <description>
 A logger should normally be defined private static final and be associated with the correct class.
-Private final Log log; is also allowed for rare cases where loggers need to be passed around,
+`private final Log log;` is also allowed for rare cases where loggers need to be passed around,
 with the restriction that the logger needs to be passed into the constructor.
         </description>
         <priority>3</priority>
         <properties>
+            <property name="version" value="2.0"/>
             <property name="xpath">
                 <value>
 <![CDATA[
-//ClassOrInterfaceBodyDeclaration[FieldDeclaration//ClassOrInterfaceType[@Image='Log']
- and
- not(FieldDeclaration[@Final='true'][@Static='true'][@Private='true'][.//VariableDeclaratorId[@Image=$staticLoggerName]]
- and
- //ArgumentList//ClassOrInterfaceType[@Image = ancestor::ClassOrInterfaceDeclaration/@Image or @Image = ancestor::EnumDeclaration/@Image])
- and
- not(FieldDeclaration[@Final='true'][@Private='true'][.//VariableDeclaratorId[@Image='log']]
- [count(.//VariableInitializer)=0]
- [ancestor::ClassOrInterfaceBody//StatementExpression[.//PrimaryExpression/descendant::*[@Image='log']][count(.//AllocationExpression)=0]]
- )]
+//FieldDeclaration
+[.//ClassOrInterfaceType[pmd-java:typeIs($loggerClass)]]
+[
+    (: check modifiers :)
+    (@Private = false() or @Final = false())
+    (: check logger name :)
+    or (@Static and .//VariableDeclaratorId[@Image != $staticLoggerName])
+    or (@Static = false() and .//VariableDeclaratorId[@Image != $loggerName])
+
+    (: check logger argument type matches class or enum name :)
+    or .//ArgumentList//ClassOrInterfaceType[@Image != ancestor::ClassOrInterfaceDeclaration/@Image]
+    or .//ArgumentList//ClassOrInterfaceType[@Image != ancestor::EnumDeclaration/@Image]
+]
+[not(
+     (: special case - final logger initialized inside constructor :)
+     count(.//VariableInitializer)=0
+     and @Static = false()
+     and
+     ancestor::ClassOrInterfaceBody//ConstructorDeclaration//StatementExpression
+        [PrimaryExpression[PrimaryPrefix[@ThisModifier]]/PrimarySuffix[@Image=$loggerName]]
+        [AssignmentOperator[@Image = '=']]
+        [Expression/PrimaryExpression/PrimaryPrefix/Name[@Image = ancestor::ConstructorDeclaration//FormalParameter/VariableDeclaratorId/@Image]]
+        [count(.//AllocationExpression)=0]
+  )
+]
 ]]>
                 </value>
             </property>
             <property name="staticLoggerName" type="String" description="Name of the static Logger variable" value="LOG"/>
+            <property name="loggerName" type="String" description="Name of the Logger instance variable" value="log"/>
+            <property name="loggerClass" type="String" description="Class name of the logger" value="Log"/>
         </properties>
         <example>
  <![CDATA[

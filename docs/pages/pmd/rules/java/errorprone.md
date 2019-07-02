@@ -5,7 +5,7 @@ permalink: pmd_rules_java_errorprone.html
 folder: pmd/rules/java
 sidebaractiveurl: /pmd_rules_java.html
 editmepath: ../pmd-java/src/main/resources/category/java/errorprone.xml
-keywords: Error Prone, AssignmentInOperand, AssignmentToNonFinalStatic, AvoidAccessibilityAlteration, AvoidAssertAsIdentifier, AvoidBranchingStatementAsLastInLoop, AvoidCallingFinalize, AvoidCatchingNPE, AvoidCatchingThrowable, AvoidDecimalLiteralsInBigDecimalConstructor, AvoidDuplicateLiterals, AvoidEnumAsIdentifier, AvoidFieldNameMatchingMethodName, AvoidFieldNameMatchingTypeName, AvoidInstanceofChecksInCatchClause, AvoidLiteralsInIfCondition, AvoidLosingExceptionInformation, AvoidMultipleUnaryOperators, AvoidUsingOctalValues, BadComparison, BeanMembersShouldSerialize, BrokenNullCheck, CallSuperFirst, CallSuperLast, CheckSkipResult, ClassCastExceptionWithToArray, CloneMethodMustBePublic, CloneMethodMustImplementCloneable, CloneMethodReturnTypeMustMatchClassName, CloneThrowsCloneNotSupportedException, CloseResource, CompareObjectsWithEquals, ConstructorCallsOverridableMethod, DataflowAnomalyAnalysis, DoNotCallGarbageCollectionExplicitly, DoNotCallSystemExit, DoNotExtendJavaLangThrowable, DoNotHardCodeSDCard, DoNotThrowExceptionInFinally, DontImportSun, DontUseFloatTypeForLoopIndices, EmptyCatchBlock, EmptyFinalizer, EmptyFinallyBlock, EmptyIfStmt, EmptyInitializer, EmptyStatementBlock, EmptyStatementNotInLoop, EmptySwitchStatements, EmptySynchronizedBlock, EmptyTryBlock, EmptyWhileStmt, EqualsNull, FinalizeDoesNotCallSuperFinalize, FinalizeOnlyCallsSuperFinalize, FinalizeOverloaded, FinalizeShouldBeProtected, IdempotentOperations, ImportFromSamePackage, InstantiationToGetClass, InvalidSlf4jMessageFormat, JumbledIncrementer, JUnitSpelling, JUnitStaticSuite, LoggerIsNotStaticFinal, MethodWithSameNameAsEnclosingClass, MisplacedNullCheck, MissingBreakInSwitch, MissingSerialVersionUID, MissingStaticMethodInNonInstantiatableClass, MoreThanOneLogger, NonCaseLabelInSwitchStatement, NonStaticInitializer, NullAssignment, OverrideBothEqualsAndHashcode, ProperCloneImplementation, ProperLogger, ReturnEmptyArrayRatherThanNull, ReturnFromFinallyBlock, SimpleDateFormatNeedsLocale, SingleMethodSingleton, SingletonClassReturningNewInstance, StaticEJBFieldShouldBeFinal, StringBufferInstantiationWithChar, SuspiciousEqualsMethodName, SuspiciousHashcodeMethodName, SuspiciousOctalEscape, TestClassWithoutTestCases, UnconditionalIfStatement, UnnecessaryBooleanAssertion, UnnecessaryCaseChange, UnnecessaryConversionTemporary, UnusedNullCheckInEquals, UseCorrectExceptionLogging, UseEqualsToCompareStrings, UselessOperationOnImmutable, UseLocaleWithCaseConversions, UseProperClassLoader
+keywords: Error Prone, AssignmentInOperand, AssignmentToNonFinalStatic, AvoidAccessibilityAlteration, AvoidAssertAsIdentifier, AvoidBranchingStatementAsLastInLoop, AvoidCallingFinalize, AvoidCatchingNPE, AvoidCatchingThrowable, AvoidDecimalLiteralsInBigDecimalConstructor, AvoidDuplicateLiterals, AvoidEnumAsIdentifier, AvoidFieldNameMatchingMethodName, AvoidFieldNameMatchingTypeName, AvoidInstanceofChecksInCatchClause, AvoidLiteralsInIfCondition, AvoidLosingExceptionInformation, AvoidMultipleUnaryOperators, AvoidUsingOctalValues, BadComparison, BeanMembersShouldSerialize, BrokenNullCheck, CallSuperFirst, CallSuperLast, CheckSkipResult, ClassCastExceptionWithToArray, CloneMethodMustBePublic, CloneMethodMustImplementCloneable, CloneMethodReturnTypeMustMatchClassName, CloneThrowsCloneNotSupportedException, CloseResource, CompareObjectsWithEquals, ConstructorCallsOverridableMethod, DataflowAnomalyAnalysis, DetachedTestCase, DoNotCallGarbageCollectionExplicitly, DoNotCallSystemExit, DoNotExtendJavaLangThrowable, DoNotHardCodeSDCard, DoNotThrowExceptionInFinally, DontImportSun, DontUseFloatTypeForLoopIndices, EmptyCatchBlock, EmptyFinalizer, EmptyFinallyBlock, EmptyIfStmt, EmptyInitializer, EmptyStatementBlock, EmptyStatementNotInLoop, EmptySwitchStatements, EmptySynchronizedBlock, EmptyTryBlock, EmptyWhileStmt, EqualsNull, FinalizeDoesNotCallSuperFinalize, FinalizeOnlyCallsSuperFinalize, FinalizeOverloaded, FinalizeShouldBeProtected, IdempotentOperations, ImportFromSamePackage, InstantiationToGetClass, InvalidSlf4jMessageFormat, JumbledIncrementer, JUnitSpelling, JUnitStaticSuite, LoggerIsNotStaticFinal, MethodWithSameNameAsEnclosingClass, MisplacedNullCheck, MissingBreakInSwitch, MissingSerialVersionUID, MissingStaticMethodInNonInstantiatableClass, MoreThanOneLogger, NonCaseLabelInSwitchStatement, NonStaticInitializer, NullAssignment, OverrideBothEqualsAndHashcode, ProperCloneImplementation, ProperLogger, ReturnEmptyArrayRatherThanNull, ReturnFromFinallyBlock, SimpleDateFormatNeedsLocale, SingleMethodSingleton, SingletonClassReturningNewInstance, StaticEJBFieldShouldBeFinal, StringBufferInstantiationWithChar, SuspiciousEqualsMethodName, SuspiciousHashcodeMethodName, SuspiciousOctalEscape, TestClassWithoutTestCases, UnconditionalIfStatement, UnnecessaryBooleanAssertion, UnnecessaryCaseChange, UnnecessaryConversionTemporary, UnusedNullCheckInEquals, UseCorrectExceptionLogging, UseEqualsToCompareStrings, UselessOperationOnImmutable, UseLocaleWithCaseConversions, UseProperClassLoader
 language: Java
 ---
 <!-- DO NOT EDIT THIS FILE. This file is generated from file ../pmd-java/src/main/resources/category/java/errorprone.xml. -->
@@ -39,9 +39,21 @@ public void bar() {
 |allowWhile|false|Allow assignment within the conditional expression of a while statement|no|
 |allowIncrementDecrement|false|Allow increment or decrement operators within the conditional expression of an if, for, or while statement|no|
 
-**Use this rule by referencing it:**
+**Use this rule with the default properties by just referencing it:**
 ``` xml
 <rule ref="category/java/errorprone.xml/AssignmentInOperand" />
+```
+
+**Use this rule and customize it:**
+``` xml
+<rule ref="category/java/errorprone.xml/AssignmentInOperand">
+    <properties>
+        <property name="allowIf" value="false" />
+        <property name="allowFor" value="false" />
+        <property name="allowWhile" value="false" />
+        <property name="allowIncrementDecrement" value="false" />
+    </properties>
+</rule>
 ```
 
 ## AssignmentToNonFinalStatic
@@ -209,9 +221,20 @@ for (int i = 0; i < 10; i++) {
 |checkContinueLoopTypes|for \| do \| while|List of loop types in which continue statements will be checked|yes. Delimiter is '\|'.|
 |checkReturnLoopTypes|for \| do \| while|List of loop types in which return statements will be checked|yes. Delimiter is '\|'.|
 
-**Use this rule by referencing it:**
+**Use this rule with the default properties by just referencing it:**
 ``` xml
 <rule ref="category/java/errorprone.xml/AvoidBranchingStatementAsLastInLoop" />
+```
+
+**Use this rule and customize it:**
+``` xml
+<rule ref="category/java/errorprone.xml/AvoidBranchingStatementAsLastInLoop">
+    <properties>
+        <property name="checkBreakLoopTypes" value="for|do|while" />
+        <property name="checkContinueLoopTypes" value="for|do|while" />
+        <property name="checkReturnLoopTypes" value="for|do|while" />
+    </properties>
+</rule>
 ```
 
 ## AvoidCallingFinalize
@@ -389,9 +412,22 @@ private void buz(String x) {}
 |skipAnnotations|false|Skip literals within annotations|no|
 |exceptionList||List of literals to ignore. A literal is ignored if its image can be found in this list. Components of this list should not be surrounded by double quotes.|no|
 
-**Use this rule by referencing it:**
+**Use this rule with the default properties by just referencing it:**
 ``` xml
 <rule ref="category/java/errorprone.xml/AvoidDuplicateLiterals" />
+```
+
+**Use this rule and customize it:**
+``` xml
+<rule ref="category/java/errorprone.xml/AvoidDuplicateLiterals">
+    <properties>
+        <property name="separator" value="," />
+        <property name="maxDuplicateLiterals" value="4" />
+        <property name="minimumLength" value="3" />
+        <property name="skipAnnotations" value="false" />
+        <property name="exceptionList" value="" />
+    </properties>
+</rule>
 ```
 
 ## AvoidEnumAsIdentifier
@@ -562,9 +598,18 @@ public void checkRequests() {
 |----|-------------|-----------|-----------|
 |ignoreMagicNumbers|-1,0|Comma-separated list of magic numbers, that should be ignored|no|
 
-**Use this rule by referencing it:**
+**Use this rule with the default properties by just referencing it:**
 ``` xml
 <rule ref="category/java/errorprone.xml/AvoidLiteralsInIfCondition" />
+```
+
+**Use this rule and customize it:**
+``` xml
+<rule ref="category/java/errorprone.xml/AvoidLiteralsInIfCondition">
+    <properties>
+        <property name="ignoreMagicNumbers" value="-1,0" />
+    </properties>
+</rule>
 ```
 
 ## AvoidLosingExceptionInformation
@@ -672,9 +717,18 @@ k = i * j;      // set k with 80 not 120
 |----|-------------|-----------|-----------|
 |strict|false|Detect violations between 00 and 07|no|
 
-**Use this rule by referencing it:**
+**Use this rule with the default properties by just referencing it:**
 ``` xml
 <rule ref="category/java/errorprone.xml/AvoidUsingOctalValues" />
+```
+
+**Use this rule and customize it:**
+``` xml
+<rule ref="category/java/errorprone.xml/AvoidUsingOctalValues">
+    <properties>
+        <property name="strict" value="false" />
+    </properties>
+</rule>
 ```
 
 ## BadComparison
@@ -738,11 +792,22 @@ private int getMoreFoo(){
 
 |Name|Default Value|Description|Multivalued|
 |----|-------------|-----------|-----------|
+|ignoredAnnotations|lombok.Data \| lombok.Getter \| lombok.Value|Fully qualified names of the annotation types that should be ignored by this rule|yes. Delimiter is '\|'.|
 |prefix||A variable prefix to skip, i.e., m\_|no|
 
-**Use this rule by referencing it:**
+**Use this rule with the default properties by just referencing it:**
 ``` xml
 <rule ref="category/java/errorprone.xml/BeanMembersShouldSerialize" />
+```
+
+**Use this rule and customize it:**
+``` xml
+<rule ref="category/java/errorprone.xml/BeanMembersShouldSerialize">
+    <properties>
+        <property name="ignoredAnnotations" value="lombok.Data|lombok.Getter|lombok.Value" />
+        <property name="prefix" value="" />
+    </properties>
+</rule>
 ```
 
 ## BrokenNullCheck
@@ -1098,7 +1163,17 @@ public class MyClass implements Cloneable{
 
 **Priority:** Medium (3)
 
-Ensure that resources (like Connection, Statement, and ResultSet objects) are always closed after use.
+Ensure that resources (like `java.sql.Connection`, `java.sql.Statement`, and `java.sql.ResultSet` objects
+and any subtype of `java.lang.AutoCloseable`) are always closed after use.
+Failing to do so might result in resource leaks.
+
+Note: It suffices to configure the super type, e.g. `java.lang.AutoClosable`, so that this rule automatically triggers
+on any subtype (e.g. `java.io.FileInputStream`). Additionally specifying `java.sql.Connection` helps in detecting
+the types, if the type resolution / auxclasspath is not correctly setup.
+
+Note: Since PMD 6.16.0 the default value for the property `types` contains `java.lang.AutoCloseable` and detects
+now cases where the standard `java.io.*Stream` classes are involved. In order to restore the old behaviour,
+just remove &quot;AutoCloseable&quot; from the types.
 
 **This rule is defined by the following Java class:** [net.sourceforge.pmd.lang.java.rule.errorprone.CloseResourceRule](https://github.com/pmd/pmd/blob/master/pmd-java/src/main/java/net/sourceforge/pmd/lang/java/rule/errorprone/CloseResourceRule.java)
 
@@ -1106,17 +1181,28 @@ Ensure that resources (like Connection, Statement, and ResultSet objects) are al
 
 ``` java
 public class Bar {
-  public void foo() {
-    Connection c = pool.getConnection();
-    try {
-      // do stuff
-    } catch (SQLException ex) {
-     // handle exception
-    } finally {
-      // oops, should close the connection using 'close'!
-      // c.close();
+    public void withSQL() {
+        Connection c = pool.getConnection();
+        try {
+            // do stuff
+        } catch (SQLException ex) {
+           // handle exception
+        } finally {
+            // oops, should close the connection using 'close'!
+            // c.close();
+        }
     }
-  }
+
+    public void withFile() {
+        InputStream file = new FileInputStream(new File("/tmp/foo"));
+        try {
+            int c = file.in();
+        } catch (IOException e) {
+            // handle exception
+        } finally {
+            // TODO: close file
+        }
+    }
 }
 ```
 
@@ -1125,12 +1211,25 @@ public class Bar {
 |Name|Default Value|Description|Multivalued|
 |----|-------------|-----------|-----------|
 |closeTargets||Methods which may close this resource|yes. Delimiter is ','.|
-|types|java.sql.Connection , java.sql.Statement , java.sql.ResultSet|Affected types|yes. Delimiter is ','.|
+|types|java.lang.AutoCloseable , java.sql.Connection , java.sql.Statement , java.sql.ResultSet|Affected types|yes. Delimiter is ','.|
 |closeAsDefaultTarget|true|Consider 'close' as a target by default|no|
+|allowedResourceTypes|java.io.ByteArrayOutputStream \| java.io.StringWriter|Exact class names that do not need to be closed|yes. Delimiter is '\|'.|
 
-**Use this rule by referencing it:**
+**Use this rule with the default properties by just referencing it:**
 ``` xml
 <rule ref="category/java/errorprone.xml/CloseResource" />
+```
+
+**Use this rule and customize it:**
+``` xml
+<rule ref="category/java/errorprone.xml/CloseResource">
+    <properties>
+        <property name="closeTargets" value="" />
+        <property name="types" value="java.lang.AutoCloseable,java.sql.Connection,java.sql.Statement,java.sql.ResultSet" />
+        <property name="closeAsDefaultTarget" value="true" />
+        <property name="allowedResourceTypes" value="java.io.ByteArrayOutputStream|java.io.StringWriter" />
+    </properties>
+</rule>
 ```
 
 ## CompareObjectsWithEquals
@@ -1235,9 +1334,70 @@ public void foo() {
 |maxPaths|1000|Maximum number of checked paths per method. A lower value will increase the performance of the rule but may decrease anomalies found.|no|
 |maxViolations|100|Maximum number of anomalies per class|no|
 
-**Use this rule by referencing it:**
+**Use this rule with the default properties by just referencing it:**
 ``` xml
 <rule ref="category/java/errorprone.xml/DataflowAnomalyAnalysis" />
+```
+
+**Use this rule and customize it:**
+``` xml
+<rule ref="category/java/errorprone.xml/DataflowAnomalyAnalysis">
+    <properties>
+        <property name="maxPaths" value="1000" />
+        <property name="maxViolations" value="100" />
+    </properties>
+</rule>
+```
+
+## DetachedTestCase
+
+**Since:** PMD 6.13.0
+
+**Priority:** Medium (3)
+
+The method appears to be a test case since it has public or default visibility,
+non-static access, no arguments, no return value, has no annotations, but is a
+member of a class that has one or more JUnit test cases. If it is a utility
+method, it should likely have private visibility. If it is an ignored test, it
+should be annotated with @Test and @Ignore.
+
+**This rule is defined by the following XPath expression:**
+``` xpath
+//ClassOrInterfaceBodyDeclaration
+[../ClassOrInterfaceBodyDeclaration/Annotation/*/Name
+        [pmd-java:typeIs('org.junit.Test')
+         or pmd-java:typeIs('org.junit.jupiter.api.Test')
+         or pmd-java:typeIs('org.junit.jupiter.api.RepeatedTest')
+         or pmd-java:typeIs('org.junit.jupiter.api.TestFactory')
+         or pmd-java:typeIs('org.junit.jupiter.api.TestTemplate')
+         or pmd-java:typeIs('org.junit.jupiter.params.ParameterizedTest')]
+]
+[not(Annotation)]
+[MethodDeclaration[(@Public = true() or @PackagePrivate = true()) and @Static = false() and
+        ResultType[@Void = true()] and
+        MethodDeclarator/FormalParameters[@ParameterCount = 0]
+    ]
+]
+```
+
+**Example(s):**
+
+``` java
+public class MyTest {
+    @Test
+    public void someTest() {
+    }
+
+    // violation: Not annotated
+    public void someOtherTest () {
+    }
+
+}
+```
+
+**Use this rule by referencing it:**
+``` xml
+<rule ref="category/java/errorprone.xml/DetachedTestCase" />
 ```
 
 ## DoNotCallGarbageCollectionExplicitly
@@ -1519,9 +1679,19 @@ public void doSomething() {
 |allowCommentedBlocks|false|Empty blocks containing comments will be skipped|no|
 |allowExceptionNameRegex|^(ignored\|expected)$|Empty blocks catching exceptions with names matching this regular expression will be skipped|no|
 
-**Use this rule by referencing it:**
+**Use this rule with the default properties by just referencing it:**
 ``` xml
 <rule ref="category/java/errorprone.xml/EmptyCatchBlock" />
+```
+
+**Use this rule and customize it:**
+``` xml
+<rule ref="category/java/errorprone.xml/EmptyCatchBlock">
+    <properties>
+        <property name="allowCommentedBlocks" value="false" />
+        <property name="allowExceptionNameRegex" value="^(ignored|expected)$" />
+    </properties>
+</rule>
 ```
 
 ## EmptyFinalizer
@@ -2244,11 +2414,16 @@ public class Foo extends TestCase {
 
 ## LoggerIsNotStaticFinal
 
+<span style="border-radius: 0.25em; color: #fff; padding: 0.2em 0.6em 0.3em; display: inline; background-color: #d9534f;">Deprecated</span> 
+
 **Since:** PMD 2.0
 
 **Priority:** Medium High (2)
 
 In most cases, the Logger reference can be declared as static and final.
+
+This rule is deprecated and will be removed with PMD 7.0.0.
+The rule is replaced by {% rule java/errorprone/ProperLogger %}.
 
 **This rule is defined by the following XPath expression:**
 ``` xpath
@@ -2566,7 +2741,7 @@ confusing.
 
 **This rule is defined by the following XPath expression:**
 ``` xpath
-//Initializer[@Static='false']
+//Initializer[@Static=false()][not(ancestor::*[3][self::AllocationExpression or self::EnumConstant])]
 ```
 
 **Example(s):**
@@ -2698,21 +2873,36 @@ class Foo{
 **Priority:** Medium (3)
 
 A logger should normally be defined private static final and be associated with the correct class.
-Private final Log log; is also allowed for rare cases where loggers need to be passed around,
+`private final Log log;` is also allowed for rare cases where loggers need to be passed around,
 with the restriction that the logger needs to be passed into the constructor.
 
 **This rule is defined by the following XPath expression:**
 ``` xpath
-//ClassOrInterfaceBodyDeclaration[FieldDeclaration//ClassOrInterfaceType[@Image='Log']
- and
- not(FieldDeclaration[@Final='true'][@Static='true'][@Private='true'][.//VariableDeclaratorId[@Image=$staticLoggerName]]
- and
- //ArgumentList//ClassOrInterfaceType[@Image = ancestor::ClassOrInterfaceDeclaration/@Image or @Image = ancestor::EnumDeclaration/@Image])
- and
- not(FieldDeclaration[@Final='true'][@Private='true'][.//VariableDeclaratorId[@Image='log']]
- [count(.//VariableInitializer)=0]
- [ancestor::ClassOrInterfaceBody//StatementExpression[.//PrimaryExpression/descendant::*[@Image='log']][count(.//AllocationExpression)=0]]
- )]
+//FieldDeclaration
+[.//ClassOrInterfaceType[pmd-java:typeIs($loggerClass)]]
+[
+    (: check modifiers :)
+    (@Private = false() or @Final = false())
+    (: check logger name :)
+    or (@Static and .//VariableDeclaratorId[@Image != $staticLoggerName])
+    or (@Static = false() and .//VariableDeclaratorId[@Image != $loggerName])
+
+    (: check logger argument type matches class or enum name :)
+    or .//ArgumentList//ClassOrInterfaceType[@Image != ancestor::ClassOrInterfaceDeclaration/@Image]
+    or .//ArgumentList//ClassOrInterfaceType[@Image != ancestor::EnumDeclaration/@Image]
+]
+[not(
+     (: special case - final logger initialized inside constructor :)
+     count(.//VariableInitializer)=0
+     and @Static = false()
+     and
+     ancestor::ClassOrInterfaceBody//ConstructorDeclaration//StatementExpression
+        [PrimaryExpression[PrimaryPrefix[@ThisModifier]]/PrimarySuffix[@Image=$loggerName]]
+        [AssignmentOperator[@Image = '=']]
+        [Expression/PrimaryExpression/PrimaryPrefix/Name[@Image = ancestor::ConstructorDeclaration//FormalParameter/VariableDeclaratorId/@Image]]
+        [count(.//AllocationExpression)=0]
+  )
+]
 ```
 
 **Example(s):**
@@ -2731,10 +2921,23 @@ public class Foo {
 |Name|Default Value|Description|Multivalued|
 |----|-------------|-----------|-----------|
 |staticLoggerName|LOG|Name of the static Logger variable|no|
+|loggerName|log|Name of the Logger instance variable|no|
+|loggerClass|Log|Class name of the logger|no|
 
-**Use this rule by referencing it:**
+**Use this rule with the default properties by just referencing it:**
 ``` xml
 <rule ref="category/java/errorprone.xml/ProperLogger" />
+```
+
+**Use this rule and customize it:**
+``` xml
+<rule ref="category/java/errorprone.xml/ProperLogger">
+    <properties>
+        <property name="staticLoggerName" value="LOG" />
+        <property name="loggerName" value="log" />
+        <property name="loggerClass" value="Log" />
+    </properties>
+</rule>
 ```
 
 ## ReturnEmptyArrayRatherThanNull

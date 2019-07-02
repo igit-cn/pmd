@@ -73,6 +73,76 @@ the breaking API changes will be performed in 7.0.0.
 an API is tagged as `@Deprecated` or not in the latest minor release. During the development of 7.0.0,
 we may decide to remove some APIs that were not tagged as deprecated, though we'll try to avoid it." %}
 
+#### 6.16.0
+
+##### Deprecated APIs
+
+> Reminder: Please don't use members marked with the annotation {% jdoc core::annotation.InternalApi %}, as they will likely be removed, hidden, or otherwise intentionally broken with 7.0.0.
+
+
+###### In ASTs
+
+As part of the changes we'd like to do to AST classes for 7.0.0, we would like to
+hide some methods and constructors that rule writers should not have access to.
+The following usages are now deprecated **in the Java AST** (with other languages to come):
+
+* Manual instantiation of nodes. **Constructors of node classes are deprecated** and marked {% jdoc core::annotation.InternalApi %}. Nodes should only be obtained from the parser, which for rules, means that never need to instantiate node themselves. Those constructors will be made package private with 7.0.0.
+* **Subclassing of abstract node classes, or usage of their type**. Version 7.0.0 will bring a new set of abstractions that will be public API, but the base classes are and will stay internal. You should not couple your code to them.
+  * In the meantime you should use interfaces like {% jdoc java::lang.java.ast.JavaNode %} or  {% jdoc core::lang.ast.Node %}, or the other published interfaces in this package, to refer to nodes generically.
+  * Concrete node classes will **be made final** with 7.0.0.
+* Setters found in any node class or interface. **Rules should consider the AST immutable**. We will make those setters package private with 7.0.0.
+
+Please look at {% jdoc_package java::lang.java.ast %} to find out the full list
+of deprecations.
+
+
+#### 6.15.0
+
+##### Deprecated APIs
+
+###### For removal
+
+*   The `DumpFacades` in all languages, that could be used to transform a AST into a textual representation,
+    will be removed with PMD 7. The rule designer is a better way to inspect nodes.
+    *   {% jdoc !q!apex::lang.apex.ast.DumpFacade %}
+    *   {% jdoc !q!java::lang.java.ast.DumpFacade %}
+    *   {% jdoc !q!javascript::lang.ecmascript.ast.DumpFacade %}
+    *   {% jdoc !q!jsp::lang.jsp.ast.DumpFacade %}
+    *   {% jdoc !q!plsql::lang.plsql.ast.DumpFacade %}
+    *   {% jdoc !q!visualforce::lang.vf.ast.DumpFacade %}
+    *   {% jdoc !q!vm::lang.vm.ast.AbstractVmNode#dump(String, boolean, Writer) %}
+    *   {% jdoc !q!xml::lang.xml.ast.DumpFacade %}
+*   The method {% jdoc !c!core::lang.LanguageVersionHandler#getDumpFacade(Writer, String, boolean) %} will be
+    removed as well. It is deprecated, along with all its implementations in the subclasses of {% jdoc core::lang.LanguageVersionHandler %}.
+
+#### 6.14.0
+
+No changes.
+
+#### 6.13.0
+
+##### Command Line Interface
+
+The start scripts `run.sh`, `pmd.bat` and `cpd.bat` support the new environment variable `PMD_JAVA_OPTS`.
+This can be used to set arbitrary JVM options for running PMD, such as memory settings (e.g. `PMD_JAVA_OPTS=-Xmx512m`)
+or enable preview language features (e.g. `PMD_JAVA_OPTS=--enable-preview`).
+
+The previously available variables such as `OPTS` or `HEAPSIZE` are deprecated and will be removed with PMD 7.0.0.
+
+##### Deprecated API
+
+*   {% jdoc core::renderers.CodeClimateRule %} is deprecated in 7.0.0 because it was unused for 2 years and
+    created an unwanted dependency.
+    Properties "cc_categories", "cc_remediation_points_multiplier", "cc_block_highlighting" will also be removed.
+    See [#1702](https://github.com/pmd/pmd/pull/1702) for more.
+
+*   The Apex ruleset `rulesets/apex/ruleset.xml` has been deprecated and will be removed in 7.0.0. Please use the new
+    quickstart ruleset `rulesets/apex/quickstart.xml` instead.
+
+#### 6.12.0
+
+No changes.
+
 #### 6.11.0
 
 * {% jdoc core::lang.rule.stat.StatisticalRule %} and the related helper classes and base rule classes

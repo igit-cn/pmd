@@ -1,4 +1,10 @@
 /**
+ * Fix #1848 Local classes should preserve their modifiers
+ * Clément Fournier 05/2019
+ *====================================================================
+ * Add support for Java 12 switch expressions and switch rules.
+ * Andreas Dangel, Clément Fournier 03/2019
+ *====================================================================
  * Add support for Java 10 Local Variable Type Inference
  * See #743. In Java 10 mode, "var" as local variable type is handled special.
  * Andreas Dangel 04/2018
@@ -378,6 +384,36 @@ public class JavaParser {
       throwParseException("With JDK 10, 'var' is a restricted local variable type and cannot be used for type declarations!");
     }
   }
+  private void checkForMultipleCaseLabels() {
+    if (jdkVersion < 12) {
+      throwParseException("Multiple case labels in switch statements are only supported with Java 12");
+    }
+  }
+  /**
+   * Keeps track during tree construction, whether we are currently building a switch label.
+   * A switch label must not contain a LambdaExpression.
+   * Unfortunately, we have added LambdaExpression as part of PrimaryPrefix, which is wrong.
+   * To keep compatibility, this flag is used, whether a LambdaExpression should be parsed
+   * in PrimaryPrefix.
+   * See also comment at #Expression().
+   */
+  private boolean inSwitchLabel = false;
+  private void checkForSwitchRules() {
+    if (jdkVersion < 12) {
+      throwParseException("Switch rules in switch statements are only supported with Java 12");
+    }
+  }
+  private void checkForSwitchExpression() {
+    if (jdkVersion < 12) {
+      throwParseException("Switch expressions are only supported with Java 12");
+    }
+  }
+
+  private void checkForBreakExpression() {
+    if (jdkVersion < 12) {
+      throwParseException("Expressions in break statements are only supported with Java 12");
+    }
+  }
 
   // This is a semantic LOOKAHEAD to determine if we're dealing with an assert
   // Note that this can't be replaced with a syntactic lookahead
@@ -407,6 +443,17 @@ public class JavaParser {
    */
   private boolean isKeyword(String keyword) {
     return getToken(1).kind == IDENTIFIER && getToken(1).image.equals(keyword);
+  }
+
+  private boolean shouldStartStatementInSwitch() {
+    switch (getToken(1).kind) {
+        case _DEFAULT:
+        case CASE:
+        case RBRACE:
+            return false;
+        default:
+            return true;
+    }
   }
 
   public Map<Integer, String> getSuppressMap() {
@@ -1573,16 +1620,26 @@ ASTCompilationUnit CompilationUnit() :
 {
   [ LOOKAHEAD( ( Annotation() )* "package" ) PackageDeclaration() ( EmptyStatement() )* ]
   ( ImportDeclaration() ( EmptyStatement() )* )*
-  ( LOOKAHEAD(2) TypeDeclaration() ( EmptyStatement() )* )*
-  [ LOOKAHEAD({isKeyword("open") || isKeyword("module") || getToken(1).kind == AT}) ModuleDeclaration() ( EmptyStatement() )* ]
+  // the module decl lookahead needs to be before the type declaration branch,
+  // looking for annotations + "open" | "module" will fail faster if it's *not*
+  // a module (most common case)
+  [ LOOKAHEAD(ModuleDeclLahead()) ModuleDeclaration() ( EmptyStatement() )* ]
+  ( TypeDeclaration() ( EmptyStatement() )* )*
   ( < "\u001a" > )?
-  ( < "~[]" > )?
+  ( < "~[]" > )? // what's this for? Do you mean ( < ~[] > )*, i.e. "any character"?
   <EOF>
+  {
+     jjtThis.setComments(token_source.comments);
+     return jjtThis;
+  }
+}
+
+private void ModuleDeclLahead() #void:
+{}
 {
- jjtThis.setComments(token_source.comments);
- return jjtThis;
+  (Annotation())* LOOKAHEAD({isKeyword("open") || isKeyword("module")}) <IDENTIFIER>
 }
-}
+
 
 void PackageDeclaration() :
 {}
@@ -1655,8 +1712,7 @@ void ClassOrInterfaceDeclaration(int modifiers):
     inInterface = false;
 }
 {
-  ( /* See note about this optional final modifier in BlockStatement */
-    ["final"|"abstract"] "class" | "interface" { jjtThis.setInterface(); inInterface = true; } )
+  ( "class" | "interface" { jjtThis.setInterface(); inInterface = true; } )
   t=<IDENTIFIER> { checkForBadTypeIdentifierUsage(t.image); jjtThis.setImage(t.image); }
   [ TypeParameters() ]
   [ ExtendsList() ]
@@ -2004,6 +2060,9 @@ void Expression() :
  // separated from the AssignmentExpression production. Their use is restricted
  // to method and constructor argument, cast operand, and the RHS of assignments.
  // https://docs.oracle.com/javase/specs/jls/se9/html/jls-15.html#jls-15.27
+ //
+ // To prevent LambdaExpressions in switch labels, the field #inSwitchLabel is used
+ // as a workaround.
 {}
 {
   ConditionalExpression()
@@ -2140,13 +2199,14 @@ void UnaryExpressionNotPlusMinus() #UnaryExpressionNotPlusMinus((jjtn000.getImag
 {
  ( "~" {jjtThis.setImage("~");} | "!" {jjtThis.setImage("!");} ) UnaryExpression()
 /*
- * This is really ugly... we are repeting the CastExpression lookahead and full expression...
+ * This is really ugly... we are repeating the CastExpression lookahead and full expression...
  * If we don't the lookahead within CastExpression is ignored, and it simply looks for the expression,
  * meaning we can't be explicit as to what can be casted depending on the cast type (primitive or otherwhise)
 */
 | LOOKAHEAD("(" (Annotation())* PrimitiveType() ")") CastExpression()
 | LOOKAHEAD("(" (Annotation())* Type() ( "&" ReferenceType() )* ")" UnaryExpressionNotPlusMinus()) CastExpression()
 | PostfixExpression()
+| SwitchExpression()
 }
 
 void PostfixExpression() #PostfixExpression((jjtn000.getImage() != null)):
@@ -2162,6 +2222,13 @@ void CastExpression() :
     "(" (Annotation())* PrimitiveType() ")"
   ) "(" (TypeAnnotation())* Type() ")" UnaryExpression()
 | "(" (TypeAnnotation())* Type() ( "&" {checkForBadIntersectionTypesInCasts(); jjtThis.setIntersectionTypes(true);} ReferenceType() )* ")" UnaryExpressionNotPlusMinus()
+}
+
+void SwitchExpression() :
+{}
+{
+    {checkForSwitchExpression();}
+    "switch" "(" Expression() ")" SwitchBlock()
 }
 
 void PrimaryExpression() :
@@ -2191,9 +2258,9 @@ void PrimaryPrefix() :
   Literal()
 | LOOKAHEAD(2) "this" {jjtThis.setUsesThisModifier();}
 | "super" {jjtThis.setUsesSuperModifier();}
-| LOOKAHEAD( <IDENTIFIER> "->" ) LambdaExpression()
-| LOOKAHEAD( "(" VariableDeclaratorId() ( "," VariableDeclaratorId() )* ")" "->" ) LambdaExpression()
-| LOOKAHEAD( FormalParameters() "->" ) LambdaExpression()
+| LOOKAHEAD( <IDENTIFIER> "->", {!inSwitchLabel} ) LambdaExpression()
+| LOOKAHEAD( "(" VariableDeclaratorId() ( "," VariableDeclaratorId() )* ")" "->", {!inSwitchLabel} ) LambdaExpression()
+| LOOKAHEAD( FormalParameters() "->", {!inSwitchLabel} ) LambdaExpression()
 | LOOKAHEAD(3) "(" Expression() ")"
 | AllocationExpression()
 | LOOKAHEAD( ResultType() "." "class" ) ResultType() "." "class"
@@ -2369,13 +2436,26 @@ void BlockStatement():
 |
   Statement()
 |
-  /*
-  TODO: Seems like we should be discarding the "final"
-  after using it in the lookahead; I added a ["final|abstract"] inside
-  ClassOrInterfaceDeclaration, but that seems like a hack that
-  could break other things...
-  */
-  LOOKAHEAD( (Annotation())* ["final"|"abstract"] "class") (Annotation())* ClassOrInterfaceDeclaration(0)
+  // we don't need to lookahead further here
+  // the ambiguity between start of local class and local variable decl
+  // is already handled in the lookahead guarding LocalVariableDeclaration above.
+  LocalClassDecl()
+}
+
+void LocalClassDecl() #void:
+{int mods = 0;}
+{
+    // this preserves the modifiers of the local class.
+    // it allows for modifiers that are forbidden for local classes,
+    // but anyway we are *not* checking modifiers for incompatibilities
+    // anywhere else in this grammar (and indeed the production Modifiers
+    // accepts any modifier explicitly for the purpose of forgiving modifier errors,
+    // and reporting them later if needed --see its documentation).
+
+    // In particular, it unfortunately allows local class declarations to start
+    // with a "default" modifier, which introduces an ambiguity with default
+    // switch labels. This is guarded by a custom lookahead around SwitchLabel
+    mods=Modifiers() ClassOrInterfaceDeclaration(mods)
 }
 
 /*
@@ -2415,20 +2495,69 @@ void StatementExpression() :
   PostfixExpression()
 }
 
-void SwitchStatement() :
+void SwitchStatement():
 {}
 {
-  "switch" "(" Expression() ")" "{"
-    ( SwitchLabel() ( BlockStatement() )* )*
-  "}"
+  "switch" "(" Expression() ")" SwitchBlock()
+}
+
+void SwitchBlock() #void :
+{}
+{
+    "{"
+        (
+            SwitchLabel()
+            (
+                "->" SwitchLabeledRulePart() (SwitchLabeledRule())*
+            |
+                ":" (LOOKAHEAD(2) SwitchLabel() ":")*
+                    // the lookahead is to prevent choosing BlockStatement when the token is "default",
+                    // which could happen as local class declarations accept the "default" modifier.
+                    (LOOKAHEAD({shouldStartStatementInSwitch()}) BlockStatement())*
+                    (SwitchLabeledStatementGroup())*
+            )
+        )?
+    "}"
+}
+
+void SwitchLabeledRule() #void :
+{checkForSwitchRules();}
+{
+    SwitchLabel() "->" SwitchLabeledRulePart()
+}
+
+void SwitchLabeledRulePart() #void:
+{checkForSwitchRules();}
+{
+    (
+        ( Expression() ";" ) #SwitchLabeledExpression(2)
+      |
+        ( Block() ) #SwitchLabeledBlock(2)
+      |
+        ( ThrowStatement() ) #SwitchLabeledThrowStatement(2)
+    )
+}
+
+// For PMD 7, make this a real node to group the labels + statements
+void SwitchLabeledStatementGroup() #void:
+{}
+{
+    (LOOKAHEAD(2) SwitchLabel() ":")+
+        // the lookahead is to prevent choosing BlockStatement when the token is "default",
+        // which could happen as local class declarations accept the "default" modifier.
+        (LOOKAHEAD({shouldStartStatementInSwitch()}) BlockStatement() )*
 }
 
 void SwitchLabel() :
 {}
 {
-  "case" Expression() ":"
+{ inSwitchLabel = true; }
+(
+  "case" ( ConditionalExpression() #Expression ) ({checkForMultipleCaseLabels();} "," ( ConditionalExpression() #Expression ) )*
 |
-  "default" {jjtThis.setDefault();} ":"
+  "default" {jjtThis.setDefault();}
+)
+{ inSwitchLabel = false; }
 }
 
 void IfStatement() :
@@ -2494,7 +2623,7 @@ void ForUpdate() :
 void BreakStatement() :
 {Token t;}
 {
-  "break" [ t=<IDENTIFIER> {jjtThis.setImage(t.image);} ] ";"
+  "break" [ LOOKAHEAD(<IDENTIFIER> ";") t=<IDENTIFIER> {jjtThis.setImage(t.image);} | Expression() {checkForBreakExpression();} ] ";"
 }
 
 void ContinueStatement() :
