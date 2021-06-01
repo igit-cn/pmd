@@ -26,7 +26,7 @@ import net.sourceforge.pmd.annotation.InternalApi;
 public class ASTAnnotation extends AbstractJavaTypeNode {
 
     private static final List<String> UNUSED_RULES
-        = Arrays.asList("UnusedPrivateField", "UnusedLocalVariable", "UnusedPrivateMethod", "UnusedFormalParameter");
+        = Arrays.asList("UnusedPrivateField", "UnusedLocalVariable", "UnusedPrivateMethod", "UnusedFormalParameter", "UnusedAssignment");
 
     private static final List<String> SERIAL_RULES = Arrays.asList("BeanMembersShouldSerialize", "MissingSerialVersionUID");
 
@@ -48,7 +48,7 @@ public class ASTAnnotation extends AbstractJavaTypeNode {
      * eg {@code java.lang.Override} or {@code Override}.
      */
     public String getAnnotationName() {
-        return jjtGetChild(0).jjtGetChild(0).getImage();
+        return getChild(0).getChild(0).getImage();
     }
 
     // @formatter:off
@@ -64,7 +64,7 @@ public class ASTAnnotation extends AbstractJavaTypeNode {
      *     <li>"all" (conventional value to suppress all warnings).
      * </ul>
      *
-     * <p>Additionnally, the following values suppress a specific set of rules:
+     * <p>Additionally, the following values suppress a specific set of rules:
      * <ul>
      *     <li>{@code "unused"}: suppresses rules like UnusedLocalVariable or UnusedPrivateField;
      *     <li>{@code "serial"}: suppresses BeanMembersShouldSerialize and MissingSerialVersionUID;
@@ -77,7 +77,7 @@ public class ASTAnnotation extends AbstractJavaTypeNode {
     // @formatter:on
     public boolean suppresses(Rule rule) {
 
-        if (jjtGetChild(0) instanceof ASTMarkerAnnotation) {
+        if (getChild(0) instanceof ASTMarkerAnnotation) {
             return false;
         }
 

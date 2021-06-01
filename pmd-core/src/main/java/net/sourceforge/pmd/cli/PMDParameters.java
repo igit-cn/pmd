@@ -9,8 +9,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import net.sourceforge.pmd.PMD;
 import net.sourceforge.pmd.PMDConfiguration;
 import net.sourceforge.pmd.RulePriority;
+import net.sourceforge.pmd.annotation.InternalApi;
 import net.sourceforge.pmd.lang.LanguageRegistry;
 import net.sourceforge.pmd.lang.LanguageVersion;
 
@@ -20,6 +22,11 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.validators.PositiveInteger;
 
+/**
+ * @deprecated Internal API. Use {@link PMD#runPmd(String[])} or {@link PMD#main(String[])}
+ */
+@Deprecated
+@InternalApi
 public class PMDParameters {
 
     @Parameter(names = { "-rulesets", "-R" }, description = "Comma separated list of ruleset names to use.",
@@ -82,7 +89,10 @@ public class PMDParameters {
             converter = PropertyConverter.class)
     private List<Properties> properties = new ArrayList<>();
 
-    @Parameter(names = { "-reportfile", "-r" }, description = "Sends report output to a file; default to System.out.")
+    @Parameter(names = { "-reportfile", "-r" },
+               description = "Path to a file to which report output is written. "
+                   + "The file is created if it does not exist. "
+                   + "If this option is not specified, the report is rendered to standard output.")
     private String reportfile = null;
 
     @Parameter(names = { "-version", "-v" }, description = "Specify version of a language PMD should use.")
@@ -92,7 +102,11 @@ public class PMDParameters {
     private String language = null;
 
     @Parameter(names = "-auxclasspath",
-            description = "Specifies the classpath for libraries used by the source code. This is used by the type resolution. Alternatively, a 'file://' URL to a text file containing path elements on consecutive lines can be specified.")
+            description = "Specifies the classpath for libraries used by the source code. "
+                    + "This is used by the type resolution. The platform specific path delimiter "
+                    + "(\":\" on Linux, \";\" on Windows) is used to separate the entries. "
+                    + "Alternatively, a single 'file:' URL to a text file containing path elements on consecutive lines "
+                    + "can be specified.")
     private String auxclasspath;
 
     @Parameter(names = { "-failOnViolation", "--failOnViolation" }, arity = 1,

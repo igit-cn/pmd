@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import net.sourceforge.pmd.annotation.InternalApi;
 import net.sourceforge.pmd.lang.ast.Node;
 import net.sourceforge.pmd.lang.java.ast.ASTAnnotation;
 import net.sourceforge.pmd.lang.java.ast.ASTClassOrInterfaceDeclaration;
@@ -24,7 +25,10 @@ import net.sourceforge.pmd.lang.java.ast.Annotatable;
  * with Lombok annotations.
  *
  * @author Andreas Dangel
+ * @deprecated Internal API
  */
+@Deprecated
+@InternalApi
 public class AbstractLombokAwareRule extends AbstractIgnoredAnnotationRule {
 
     private boolean lombokImported = false;
@@ -105,7 +109,7 @@ public class AbstractLombokAwareRule extends AbstractIgnoredAnnotationRule {
     @Deprecated
     protected boolean hasLombokAnnotation(Node node) {
         boolean result = false;
-        Node parent = node.jjtGetParent();
+        Node parent = node.getParent();
         List<ASTAnnotation> annotations = parent.findChildrenOfType(ASTAnnotation.class);
         for (ASTAnnotation annotation : annotations) {
             ASTName name = annotation.getFirstDescendantOfType(ASTName.class);

@@ -26,21 +26,38 @@ import java.util.logging.Logger;
 
 
 /* default */ class JavaTypeDefinitionSimple extends JavaTypeDefinition {
+
+    static final JavaTypeDefinitionSimple OBJECT_DEFINITION = new JavaTypeDefinitionSimple(Object.class);
     private final Class<?> clazz;
-    private final JavaTypeDefinition[] genericArgs;
+    private JavaTypeDefinition[] genericArgs;
     // cached because calling clazz.getTypeParameters().length create a new array every time
-    private final int typeParameterCount;
-    private final boolean isGeneric;
-    private final boolean isRawType;
-    private final JavaTypeDefinition enclosingClass;
+    private int typeParameterCount = -1;
+    private final int typeArgumentCount;
 
     private static final Logger LOG = Logger.getLogger(JavaTypeDefinitionSimple.class.getName());
-    private static final JavaTypeDefinition[] NO_GENERICS = {};
 
     protected JavaTypeDefinitionSimple(Class<?> clazz, JavaTypeDefinition... boundGenerics) {
         super(EXACT);
         this.clazz = clazz;
 
+        typeArgumentCount = boundGenerics.length;
+        if (boundGenerics.length > 0) {
+            genericArgs = Arrays.copyOf(boundGenerics, boundGenerics.length);
+        } // otherwise stays null
+    }
+
+    private Class<?> loadEnclosing(Class<?> clazz) {
+        try {
+            return clazz.getEnclosingClass();
+        } catch (LinkageError e) {
+            if (LOG.isLoggable(Level.WARNING)) {
+                LOG.log(Level.WARNING, "Could not load enclosing class of " + clazz.getName() + ", due to: " + e);
+            }
+            return null;
+        }
+    }
+
+    private TypeVariable<?>[] getTypeParameters(Class<?> clazz) {
         final TypeVariable<?>[] typeParameters;
         // the anonymous class can't have generics, but we may be binding generics from super classes
         if (clazz.isAnonymousClass()) {
@@ -53,19 +70,7 @@ import java.util.logging.Logger;
         } else {
             typeParameters = clazz.getTypeParameters();
         }
-
-        typeParameterCount = typeParameters.length;
-        isGeneric = typeParameters.length != 0;
-        isRawType = isGeneric && boundGenerics.length == 0;
-
-        if (isGeneric) {
-            // Generics will be lazily loaded if not already known
-            this.genericArgs = Arrays.copyOf(boundGenerics, typeParameterCount);
-        } else {
-            this.genericArgs = NO_GENERICS;
-        }
-
-        enclosingClass = forClass(clazz.getEnclosingClass());
+        return typeParameters;
     }
 
     @Override
@@ -75,12 +80,29 @@ import java.util.logging.Logger;
 
     @Override
     public JavaTypeDefinition getEnclosingClass() {
-        return enclosingClass;
+        return JavaTypeDefinition.forClass(loadEnclosing(clazz));
+    }
+
+    @Override
+    public boolean isRawType() {
+        return isGeneric() && typeArgumentCount == 0;
     }
 
     @Override
     public boolean isGeneric() {
-        return isGeneric;
+        return getTypeParameterCount() != 0;
+    }
+
+    @Override
+    public int getTypeParameterCount() {
+        if (typeParameterCount == -1) {
+            try {
+                typeParameterCount = getTypeParameters(clazz).length;
+            } catch (LinkageError | TypeNotPresentException ignored) {
+                typeParameterCount = 0; // don't stay stuck on -1
+            }
+        }
+        return typeParameterCount;
     }
 
     private JavaTypeDefinition getGenericType(final String parameterName, Method method,
@@ -123,6 +145,10 @@ import java.util.logging.Logger;
 
     @Override
     public JavaTypeDefinition getGenericType(final int index) {
+        if (genericArgs == null) {
+            genericArgs = new JavaTypeDefinition[getTypeParameterCount()];
+        }
+
         // Check if it has been lazily initialized first
         final JavaTypeDefinition cachedDefinition = genericArgs[index];
         if (cachedDefinition != null) {
@@ -156,35 +182,45 @@ import java.util.logging.Logger;
             return forClass(Object.class);
         }
 
-        if (type instanceof Class) { // Raw types take this branch as well
-            return forClass((Class<?>) type);
-        } else if (type instanceof ParameterizedType) {
-            final ParameterizedType parameterizedType = (ParameterizedType) type;
+        try {
+            if (type instanceof Class) { // Raw types take this branch as well
+                return forClass((Class<?>) type);
+            } else if (type instanceof ParameterizedType) {
+                final ParameterizedType parameterizedType = (ParameterizedType) type;
 
-            // recursively determine each type argument's type def.
-            final Type[] typeArguments = parameterizedType.getActualTypeArguments();
-            final JavaTypeDefinition[] genericBounds = new JavaTypeDefinition[typeArguments.length];
-            for (int i = 0; i < typeArguments.length; i++) {
-                genericBounds[i] = resolveTypeDefinition(typeArguments[i], method, methodTypeArgs);
+                // recursively determine each type argument's type def.
+                final Type[] typeArguments = parameterizedType.getActualTypeArguments();
+                final JavaTypeDefinition[] genericBounds = new JavaTypeDefinition[typeArguments.length];
+                for (int i = 0; i < typeArguments.length; i++) {
+                    genericBounds[i] = resolveTypeDefinition(typeArguments[i], method, methodTypeArgs);
+                }
+
+                // TODO : is this cast safe?
+                return forClass((Class<?>) parameterizedType.getRawType(), genericBounds);
+            } else if (type instanceof TypeVariable) {
+                return getGenericType(((TypeVariable<?>) type).getName(), method, methodTypeArgs);
+            } else if (type instanceof WildcardType) {
+                final Type[] wildcardLowerBounds = ((WildcardType) type).getLowerBounds();
+
+                if (wildcardLowerBounds.length != 0) { // lower bound wildcard
+                    return forClass(LOWER_WILDCARD, resolveTypeDefinition(wildcardLowerBounds[0], method, methodTypeArgs));
+                } else { // upper bound wildcard
+                    final Type[] wildcardUpperBounds = ((WildcardType) type).getUpperBounds();
+                    return forClass(UPPER_WILDCARD, resolveTypeDefinition(wildcardUpperBounds[0], method, methodTypeArgs));
+                }
+            } else if (type instanceof GenericArrayType) {
+                JavaTypeDefinition component = resolveTypeDefinition(((GenericArrayType) type).getGenericComponentType(), method, methodTypeArgs);
+                // only if we could determine the actual type
+                if (component != null) {
+                    // TODO: retain the generic types of the array component...
+                    return forClass(Array.newInstance(component.getType(), 0).getClass());
+                }
             }
-
-            // TODO : is this cast safe?
-            return forClass((Class<?>) parameterizedType.getRawType(), genericBounds);
-        } else if (type instanceof TypeVariable) {
-            return getGenericType(((TypeVariable<?>) type).getName(), method, methodTypeArgs);
-        } else if (type instanceof WildcardType) {
-            final Type[] wildcardLowerBounds = ((WildcardType) type).getLowerBounds();
-
-            if (wildcardLowerBounds.length != 0) { // lower bound wildcard
-                return forClass(LOWER_WILDCARD, resolveTypeDefinition(wildcardLowerBounds[0], method, methodTypeArgs));
-            } else { // upper bound wildcard
-                final Type[] wildcardUpperBounds = ((WildcardType) type).getUpperBounds();
-                return forClass(UPPER_WILDCARD, resolveTypeDefinition(wildcardUpperBounds[0], method, methodTypeArgs));
-            }
-        } else if (type instanceof GenericArrayType) {
-            JavaTypeDefinition component = resolveTypeDefinition(((GenericArrayType) type).getGenericComponentType(), method, methodTypeArgs);
-            // TODO: retain the generic types of the array component...
-            return forClass(Array.newInstance(component.getType(), 0).getClass());
+        } catch (TypeNotPresentException | LinkageError e) {
+            // might be thrown by parameterizedType.getActualTypeArguments(), type.getLowerBounds(),
+            // type.getUpperBounds(), type.getGenericComponentType()
+            // This is an incomplete classpath, report the missing class
+            LOG.log(Level.FINE, "Possible incomplete auxclasspath: Error while resolving generic types", e);
         }
 
         // TODO : Shall we throw here?
@@ -257,11 +293,6 @@ import java.util.logging.Logger;
         return clazz == def.getType();
     }
 
-    @Override
-    public int getTypeParameterCount() {
-        return typeParameterCount;
-    }
-
 
     @Override
     public String toString() {
@@ -270,19 +301,16 @@ import java.util.logging.Logger;
                 .append(", genericArgs=[");
 
         // Forcefully resolve all generic types
-        for (int i = 0; i < genericArgs.length; i++) {
-            getGenericType(i);
-        }
-
-        for (final JavaTypeDefinition jtd : genericArgs) {
+        for (int i = 0; i < getTypeParameterCount(); i++) {
+            JavaTypeDefinition jtd = getGenericType(i);
             sb.append(jtd.shallowString()).append(", ");
         }
 
-        if (genericArgs.length != 0) {
+        if (getTypeParameterCount() != 0) {
             sb.replace(sb.length() - 3, sb.length() - 1, "");   // remove last comma
         }
 
-        return sb.append("], isGeneric=").append(isGeneric)
+        return sb.append("], isGeneric=").append(isGeneric())
             .append("]\n").toString();
     }
 
@@ -290,7 +318,7 @@ import java.util.logging.Logger;
     public String shallowString() {
         return new StringBuilder("JavaTypeDefinition [clazz=").append(clazz)
                 .append(", definitionType=").append(getDefinitionType())
-                .append(", isGeneric=").append(isGeneric)
+                .append(", isGeneric=").append(isGeneric())
                 .append("]\n").toString();
     }
 
@@ -317,6 +345,10 @@ import java.util.logging.Logger;
             return false;
         }
 
+        if (isRawType() || otherTypeDef.isRawType()) {
+            return this.isRawType() == otherTypeDef.isRawType();
+        }
+
         for (int i = 0; i < getTypeParameterCount(); ++i) {
             // Note: we assume that cycles can only exist because of raw types
             if (!getGenericType(i).equals(otherTypeDef.getGenericType(i))) {
@@ -341,13 +373,19 @@ import java.util.logging.Logger;
     protected Set<JavaTypeDefinition> getSuperTypeSet(Set<JavaTypeDefinition> destinationSet) {
         destinationSet.add(this);
 
-        if (this.clazz != Object.class) {
+        try {
+            if (this.clazz != Object.class) {
 
-            resolveTypeDefinition(clazz.getGenericSuperclass()).getSuperTypeSet(destinationSet);
+                resolveTypeDefinition(clazz.getGenericSuperclass()).getSuperTypeSet(destinationSet);
 
-            for (Type type : clazz.getGenericInterfaces()) {
-                resolveTypeDefinition(type).getSuperTypeSet(destinationSet);
+                for (Type type : clazz.getGenericInterfaces()) {
+                    resolveTypeDefinition(type).getSuperTypeSet(destinationSet);
+                }
             }
+        } catch (TypeNotPresentException | LinkageError e) {
+            // might be thrown by clazz.getGenericSuperclass(), clazz.getGenericInterfaces()
+            // This is an incomplete classpath, report the missing class
+            LOG.log(Level.FINE, "Possible incomplete auxclasspath: Error while processing methods", e);
         }
 
         return destinationSet;
@@ -401,11 +439,6 @@ import java.util.logging.Logger;
     @Override
     public int getJavaTypeCount() {
         return 1;
-    }
-
-    @Override
-    public boolean isRawType() {
-        return isRawType;
     }
 
     @Override

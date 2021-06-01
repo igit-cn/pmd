@@ -14,6 +14,7 @@ import net.sourceforge.pmd.cpd.token.JavaCCTokenFilter;
 import net.sourceforge.pmd.cpd.token.TokenFilter;
 import net.sourceforge.pmd.lang.TokenManager;
 import net.sourceforge.pmd.lang.ast.GenericToken;
+import net.sourceforge.pmd.lang.ast.TokenMgrError;
 
 public abstract class JavaCCTokenizer implements Tokenizer {
 
@@ -24,9 +25,9 @@ public abstract class JavaCCTokenizer implements Tokenizer {
     }
 
     protected TokenEntry processToken(Tokens tokenEntries, GenericToken currentToken, String filename) {
-        return new TokenEntry(currentToken.getImage(), filename, currentToken.getBeginLine());
+        return new TokenEntry(currentToken.getImage(), filename, currentToken.getBeginLine(), currentToken.getBeginColumn(), currentToken.getEndColumn());
     }
-    
+
     @Override
     public void tokenize(SourceCode sourceCode, Tokens tokenEntries) throws IOException {
         TokenManager tokenManager = getLexerForSource(sourceCode);
@@ -39,6 +40,8 @@ public abstract class JavaCCTokenizer implements Tokenizer {
                 tokenEntries.add(processToken(tokenEntries, currentToken, sourceCode.getFileName()));
                 currentToken = tokenFilter.getNextToken();
             }
+        } catch (TokenMgrError e) {
+            throw e.withFileName(sourceCode.getFileName());
         } finally {
             tokenEntries.add(TokenEntry.getEOF());
         }

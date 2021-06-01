@@ -5,16 +5,17 @@
 package net.sourceforge.pmd.lang.java.ast;
 
 import net.sourceforge.pmd.annotation.InternalApi;
-import net.sourceforge.pmd.lang.ast.AbstractNode;
+import net.sourceforge.pmd.lang.ast.impl.javacc.AbstractJjtreeNode;
 import net.sourceforge.pmd.lang.symboltable.Scope;
 
 @Deprecated
 @InternalApi
-public abstract class AbstractJavaNode extends AbstractNode implements JavaNode {
+public abstract class AbstractJavaNode extends AbstractJjtreeNode<JavaNode> implements JavaNode {
 
     protected JavaParser parser;
     private Scope scope;
     private Comment comment;
+    private ASTCompilationUnit root;
 
     @InternalApi
     @Deprecated
@@ -62,6 +63,14 @@ public abstract class AbstractJavaNode extends AbstractNode implements JavaNode 
             }
         }
         return data;
+    }
+
+    @Override
+    public ASTCompilationUnit getRoot() {
+        if (root == null) {
+            root = getParent().getRoot();
+        }
+        return root;
     }
 
     @Override

@@ -4,14 +4,12 @@
 
 package net.sourceforge.pmd.lang.apex.ast;
 
-import static net.sourceforge.pmd.lang.apex.ast.ApexParserTestHelpers.parse;
-
 import org.junit.Assert;
 import org.junit.Test;
 
 import apex.jorje.semantic.ast.compilation.Compilation;
 
-public class ASTUserInterfaceTest {
+public class ASTUserInterfaceTest extends ApexParserTestBase {
 
     @Test
     public void testInterfaceName() {
@@ -27,5 +25,21 @@ public class ASTUserInterfaceTest {
         ASTUserInterface innerNode = node.getFirstDescendantOfType(ASTUserInterface.class);
         Assert.assertNotNull(innerNode);
         Assert.assertEquals("Bar", innerNode.getImage());
+    }
+
+    @Test
+    public void testSuperInterface() {
+        ApexNode<?> node = parse("public interface CustomInterface extends A {}");
+        Assert.assertSame(ASTUserInterface.class, node.getClass());
+        ASTUserInterface toplevel = (ASTUserInterface) node;
+        Assert.assertEquals("A", toplevel.getSuperInterfaceName());
+    }
+
+    @Test
+    public void testSuperInterface2() {
+        ApexNode<?> node = parse("public interface CustomInterface extends Other.A {}");
+        Assert.assertSame(ASTUserInterface.class, node.getClass());
+        ASTUserInterface toplevel = (ASTUserInterface) node;
+        Assert.assertEquals("Other.A", toplevel.getSuperInterfaceName());
     }
 }

@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import net.sourceforge.pmd.annotation.InternalApi;
+import net.sourceforge.pmd.lang.ast.xpath.internal.DeprecatedAttribute;
 
 
 public class ASTFormalParameters extends AbstractJavaNode implements Iterable<ASTFormalParameter> {
@@ -24,10 +25,19 @@ public class ASTFormalParameters extends AbstractJavaNode implements Iterable<AS
         super(p, id);
     }
 
-    public int getParameterCount() {
+    public int size() {
         final List<ASTFormalParameter> parameters = findChildrenOfType(ASTFormalParameter.class);
         return !parameters.isEmpty() && parameters.get(0).isExplicitReceiverParameter()
                ? parameters.size() - 1 : parameters.size();
+    }
+
+    /**
+     * @deprecated for removal. Use {@link #size()} instead.
+     */
+    @Deprecated
+    @DeprecatedAttribute(replaceWith = "@Size")
+    public int getParameterCount() {
+        return size();
     }
 
     @Override

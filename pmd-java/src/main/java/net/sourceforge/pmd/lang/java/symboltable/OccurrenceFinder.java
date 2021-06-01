@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
 
+import net.sourceforge.pmd.annotation.InternalApi;
 import net.sourceforge.pmd.lang.java.ast.ASTName;
 import net.sourceforge.pmd.lang.java.ast.ASTPrimaryExpression;
 import net.sourceforge.pmd.lang.java.ast.ASTResource;
@@ -16,6 +17,8 @@ import net.sourceforge.pmd.lang.java.ast.JavaParserVisitorAdapter;
 import net.sourceforge.pmd.lang.symboltable.NameDeclaration;
 import net.sourceforge.pmd.lang.symboltable.Scope;
 
+@Deprecated
+@InternalApi
 public class OccurrenceFinder extends JavaParserVisitorAdapter {
 
     // Maybe do some sort of State pattern thingy for when NameDeclaration
@@ -27,17 +30,17 @@ public class OccurrenceFinder extends JavaParserVisitorAdapter {
     @Override
     public Object visit(ASTResource node, Object data) {
         // is this a concise resource reference?
-        if (node.jjtGetNumChildren() == 1) {
-            ASTName nameNode = (ASTName) node.jjtGetChild(0);
+        if (node.getNumChildren() == 1) {
+            ASTName nameNode = (ASTName) node.getChild(0);
             for (StringTokenizer st = new StringTokenizer(nameNode.getImage(), "."); st.hasMoreTokens();) {
                 JavaNameOccurrence occ = new JavaNameOccurrence(nameNode, st.nextToken());
                 new Search(occ).execute();
             }
         }
-        
+
         return super.visit(node, data);
     }
-    
+
     @Override
     public Object visit(ASTPrimaryExpression node, Object data) {
         NameFinder nameFinder = new NameFinder(node);

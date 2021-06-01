@@ -5,6 +5,7 @@
 package net.sourceforge.pmd.lang.java.ast;
 
 import net.sourceforge.pmd.annotation.InternalApi;
+import net.sourceforge.pmd.lang.ast.xpath.internal.DeprecatedAttribute;
 
 public class ASTArguments extends AbstractJavaNode {
 
@@ -20,11 +21,24 @@ public class ASTArguments extends AbstractJavaNode {
         super(p, id);
     }
 
-    public int getArgumentCount() {
-        if (this.jjtGetNumChildren() == 0) {
+    /**
+     * Gets the number of arguments.
+     * @return
+     */
+    public int size() {
+        if (this.getNumChildren() == 0) {
             return 0;
         }
-        return this.jjtGetChild(0).jjtGetNumChildren();
+        return ((ASTArgumentList) this.getChild(0)).size();
+    }
+
+    /**
+     * @deprecated for removal. Use {@link #size()} or {@link ASTArgumentList#size()} instead.
+     */
+    @Deprecated
+    @DeprecatedAttribute(replaceWith = "@Size")
+    public int getArgumentCount() {
+        return size();
     }
 
     @Override

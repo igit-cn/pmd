@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -6,6 +6,8 @@ package net.sourceforge.pmd.lang.apex.ast;
 
 import java.lang.reflect.Field;
 import java.util.Optional;
+
+import net.sourceforge.pmd.annotation.InternalApi;
 
 import apex.jorje.data.Identifier;
 import apex.jorje.data.ast.LiteralType;
@@ -15,6 +17,8 @@ import apex.jorje.semantic.ast.expression.NewKeyValueObjectExpression.NameValueP
 
 public class ASTLiteralExpression extends AbstractApexNode<LiteralExpression> {
 
+    @Deprecated
+    @InternalApi
     public ASTLiteralExpression(LiteralExpression literalExpression) {
         super(literalExpression);
     }
@@ -66,14 +70,14 @@ public class ASTLiteralExpression extends AbstractApexNode<LiteralExpression> {
     }
 
     public String getName() {
-        if (jjtGetParent() instanceof ASTNewKeyValueObjectExpression) {
-            ASTNewKeyValueObjectExpression parent = (ASTNewKeyValueObjectExpression) jjtGetParent();
+        if (getParent() instanceof ASTNewKeyValueObjectExpression) {
+            ASTNewKeyValueObjectExpression parent = (ASTNewKeyValueObjectExpression) getParent();
             try {
                 Field exprField = NameValueParameter.class.getDeclaredField("expression");
                 exprField.setAccessible(true);
                 Optional<NameValueParameter> parameter = parent.node.getParameters().stream().filter(p -> {
                     try {
-                        return exprField.get(p) == this.node;
+                        return this.node.equals(exprField.get(p));
                     } catch (IllegalArgumentException | IllegalAccessException e) {
                         return false;
                     }

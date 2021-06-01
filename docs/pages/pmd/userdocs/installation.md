@@ -11,7 +11,13 @@ sidebar: pmd_sidebar
 
 ### Requirements
 
-*   [Java JRE](http://www.oracle.com/technetwork/java/javase/downloads/index.html) 1.7 or higher
+*   [Java JRE](http://www.oracle.com/technetwork/java/javase/downloads/index.html),
+    OpenJDK from [Azul](https://www.azul.com/downloads/zulu-community/)
+    or [AdoptOpenJDK](https://adoptopenjdk.net/) 1.7 or higher.
+    
+    **Note:** For analyzing Apex, JavaScript, Scala or VisualForce or running the [Designer](pmd_userdocs_extending_designer_reference.html)
+    at least Java 8 is required.
+    
 *   A zip archiver, e.g.:
     
     * For Windows: [Winzip](http://winzip.com) or the free [7-zip](http://www.7-zip.org/)
@@ -22,7 +28,7 @@ sidebar: pmd_sidebar
 
 ### Installation
 
-PMD is distributed as a zip archive, which includes both [PMD](#running-pmd-via-command-line) and [CPD](/pmd_userdocs_cpd.html). 
+PMD is distributed as a zip archive, which includes both [PMD](#running-pmd-via-command-line) and [CPD](pmd_userdocs_cpd.html). 
 You can download the latest binary distribution from [the github releases page](https://github.com/pmd/pmd/releases).
 
 Unzip it into any directory, optionally add the `bin` subdirectory in your `PATH`, and you're good to go!         
@@ -79,7 +85,7 @@ Additionally, the following options, are specified most of the time even though 
   <div class="tab-content">
     <div role="tabpanel" class="tab-pane active" id="linux">
 <figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="gp">~ $ </span><span class="s2">cd</span> ~/bin/pmd-bin-{{site.pmd.version}}/bin
-<span class="gp">~/.../bin $ </span><span class="s2">./run.sh</span> pmd -d ../../../src/main/java/ -f text -R rulesets/java/basic.xml
+<span class="gp">~/.../bin $ </span><span class="s2">./run.sh</span> pmd -d ../../../src/main/java/ -f text -R rulesets/java/quickstart.xml
   
   .../src/main/java/com/me/RuleSet.java:123  These nested if statements could be combined
   .../src/main/java/com/me/RuleSet.java:231  Useless parentheses.
@@ -89,7 +95,7 @@ Additionally, the following options, are specified most of the time even though 
     </div>
     <div role="tabpanel" class="tab-pane" id="windows">
 <figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="gp">C:\ &gt; </span><span class="s2">cd</span> C:\pmd-bin-{{site.pmd.version}}\bin
-<span class="gp">C:\...\bin > </span><span class="s2">.\pmd.bat</span> -d ..\..\src\main\java\ -f text -R rulesets/java/basic.xml
+<span class="gp">C:\...\bin > </span><span class="s2">.\pmd.bat</span> -d ..\..\src\main\java\ -f text -R rulesets/java/quickstart.xml
       
   .../src/main/java/com/me/RuleSet.java:123  These nested if statements could be combined
   .../src/main/java/com/me/RuleSet.java:231  Useless parentheses.

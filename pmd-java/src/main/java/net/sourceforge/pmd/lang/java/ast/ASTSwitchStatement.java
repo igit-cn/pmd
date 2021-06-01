@@ -60,7 +60,7 @@ public class ASTSwitchStatement extends AbstractJavaNode implements Iterable<AST
      * This is the expression between the parentheses.
      */
     public ASTExpression getTestedExpression() {
-        return (ASTExpression) jjtGetChild(0);
+        return (ASTExpression) getChild(0);
     }
 
 
@@ -86,7 +86,10 @@ public class ASTSwitchStatement extends AbstractJavaNode implements Iterable<AST
                 // since this is an enum switch, the labels are necessarily
                 // the simple name of some enum constant.
 
-                constantNames.remove(label.getFirstDescendantOfType(ASTName.class).getImage());
+                // descendant can be null for default case
+                if (label.getFirstDescendantOfType(ASTName.class) != null) {
+                    constantNames.remove(label.getFirstDescendantOfType(ASTName.class).getImage());
+                }
 
             }
 

@@ -22,7 +22,7 @@ import net.sourceforge.pmd.lang.java.ast.ASTResultType;
 import net.sourceforge.pmd.lang.java.ast.ASTType;
 import net.sourceforge.pmd.lang.java.ast.ASTVariableDeclarator;
 import net.sourceforge.pmd.lang.java.rule.AbstractIgnoredAnnotationRule;
-import net.sourceforge.pmd.lang.java.typeresolution.TypeHelper;
+import net.sourceforge.pmd.lang.java.types.TypeTestUtil;
 import net.sourceforge.pmd.properties.PropertyDescriptor;
 
 public class LinguisticNamingRule extends AbstractIgnoredAnnotationRule {
@@ -81,29 +81,28 @@ public class LinguisticNamingRule extends AbstractIgnoredAnnotationRule {
     @Override
     public Object visit(ASTMethodDeclaration node, Object data) {
         if (!hasIgnoredAnnotation(node)) {
-            String nameOfMethod = node.getMethodName();
+            String nameOfMethod = node.getName();
 
             if (getProperty(CHECK_BOOLEAN_METHODS)) {
                 checkBooleanMethods(node, data, nameOfMethod);
             }
-    
+
             if (getProperty(CHECK_SETTERS)) {
                 checkSetters(node, data, nameOfMethod);
             }
-    
+
             if (getProperty(CHECK_GETTERS)) {
                 checkGetters(node, data, nameOfMethod);
             }
-    
+
             if (getProperty(CHECK_PREFIXED_TRANSFORM_METHODS)) {
                 checkPrefixedTransformMethods(node, data, nameOfMethod);
             }
-    
+
             if (getProperty(CHECK_TRANSFORM_METHODS)) {
                 checkTransformMethods(node, data, nameOfMethod);
             }
         }
-
         return data;
     }
 
@@ -150,7 +149,9 @@ public class LinguisticNamingRule extends AbstractIgnoredAnnotationRule {
     }
 
     private boolean isBooleanType(ASTType node) {
-        return "boolean".equalsIgnoreCase(node.getTypeImage()) || TypeHelper.isA(node, "java.util.concurrent.atomic.AtomicBoolean");
+        return "boolean".equalsIgnoreCase(node.getTypeImage())
+                || TypeTestUtil.isA("java.util.concurrent.atomic.AtomicBoolean", node)
+                || TypeTestUtil.isA("java.util.function.Predicate", node);
     }
 
     private void checkBooleanMethods(ASTMethodDeclaration node, Object data, String nameOfMethod) {

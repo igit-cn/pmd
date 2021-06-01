@@ -5,9 +5,11 @@
 package net.sourceforge.pmd.lang.java.ast;
 
 import java.util.Iterator;
+import java.util.List;
 
 import net.sourceforge.pmd.Rule;
 import net.sourceforge.pmd.annotation.InternalApi;
+import net.sourceforge.pmd.lang.ast.xpath.internal.DeprecatedAttribute;
 
 
 /**
@@ -45,10 +47,15 @@ public class ASTLocalVariableDeclaration extends AbstractJavaAccessNode implemen
     }
 
     @Override
+    public List<ASTAnnotation> getDeclaredAnnotations() {
+        return findChildrenOfType(ASTAnnotation.class);
+    }
+
+    @Override
     public boolean hasSuppressWarningsAnnotationFor(Rule rule) {
-        for (int i = 0; i < jjtGetNumChildren(); i++) {
-            if (jjtGetChild(i) instanceof ASTAnnotation) {
-                ASTAnnotation a = (ASTAnnotation) jjtGetChild(i);
+        for (int i = 0; i < getNumChildren(); i++) {
+            if (getChild(i) instanceof ASTAnnotation) {
+                ASTAnnotation a = (ASTAnnotation) getChild(i);
                 if (a.suppresses(rule)) {
                     return true;
                 }
@@ -102,7 +109,7 @@ public class ASTLocalVariableDeclaration extends AbstractJavaAccessNode implemen
     }
 
     private ASTVariableDeclaratorId getDecl() {
-        return (ASTVariableDeclaratorId) jjtGetChild(jjtGetNumChildren() - 1).jjtGetChild(0);
+        return (ASTVariableDeclaratorId) getChild(getNumChildren() - 1).getChild(0);
     }
 
     private int getArrayDimensionOnDeclaratorId() {
@@ -111,7 +118,7 @@ public class ASTLocalVariableDeclaration extends AbstractJavaAccessNode implemen
 
     /**
      * Gets the variable name of this declaration. This method searches the first
-     * VariableDeclartorId node and returns it's image or <code>null</code> if
+     * VariableDeclaratorId node and returns it's image or <code>null</code> if
      * the child node is not found.
      *
      * @return a String representing the name of the variable
@@ -122,6 +129,7 @@ public class ASTLocalVariableDeclaration extends AbstractJavaAccessNode implemen
     // It would be nice to have a way to inform XPath users of the intended replacement
     // for a deprecated attribute. We may use another annotation for that.
     @Deprecated
+    @DeprecatedAttribute(replaceWith = "VariableDeclaratorId/@Name")
     public String getVariableName() {
         ASTVariableDeclaratorId decl = getFirstDescendantOfType(ASTVariableDeclaratorId.class);
         if (decl != null) {

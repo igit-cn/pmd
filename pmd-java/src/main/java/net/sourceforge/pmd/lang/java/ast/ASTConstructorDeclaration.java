@@ -6,6 +6,7 @@ package net.sourceforge.pmd.lang.java.ast;
 
 
 import net.sourceforge.pmd.annotation.InternalApi;
+import net.sourceforge.pmd.lang.ast.xpath.internal.DeprecatedAttribute;
 
 public class ASTConstructorDeclaration extends AbstractMethodOrConstructorDeclaration {
 
@@ -52,8 +53,21 @@ public class ASTConstructorDeclaration extends AbstractMethodOrConstructorDeclar
         return getFormalParameters();
     }
 
+    /**
+     * @deprecated Use {@link #getArity()}
+     */
+    @Deprecated
+    @DeprecatedAttribute(replaceWith = "@Arity")
     public int getParameterCount() {
-        return getFormalParameters().getParameterCount();
+        return getArity();
+    }
+
+    /**
+     * Returns the number of formal parameters expected by this constructor
+     * (excluding any receiver parameter). A varargs parameter counts as one.
+     */
+    public int getArity() {
+        return getFormalParameters().size();
     }
 
     //@Override // enable this with PMD 7.0.0 - see interface ASTMethodOrConstructorDeclaration

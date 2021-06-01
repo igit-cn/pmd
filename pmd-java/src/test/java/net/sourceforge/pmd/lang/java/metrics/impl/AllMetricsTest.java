@@ -4,8 +4,6 @@
 
 package net.sourceforge.pmd.lang.java.metrics.impl;
 
-import net.sourceforge.pmd.Rule;
-import net.sourceforge.pmd.lang.java.metrics.MetricsHook;
 import net.sourceforge.pmd.testframework.SimpleAggregatorTst;
 
 /**
@@ -18,16 +16,9 @@ public class AllMetricsTest extends SimpleAggregatorTst {
 
     private static final String RULESET = "rulesets/java/metrics_test.xml";
 
-
-    @Override
-    protected Rule reinitializeRule(Rule rule) {
-        MetricsHook.reset();
-        return rule;
-    }
-
-
     @Override
     public void setUp() {
+        addRule(RULESET, "CognitiveComplexityTest");
         addRule(RULESET, "CycloTest");
         addRule(RULESET, "NcssTest");
         addRule(RULESET, "WmcTest");
@@ -38,6 +29,7 @@ public class AllMetricsTest extends SimpleAggregatorTst {
         addRule(RULESET, "WocTest");
         addRule(RULESET, "TccTest");
         addRule(RULESET, "AtfdTest");
+        addRule(RULESET, "CfoTest");
     }
 
 }

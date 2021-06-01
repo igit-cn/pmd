@@ -32,24 +32,27 @@ public class UnusedPrivateFieldRule extends AbstractLombokAwareRule {
 
     @Override
     protected Collection<String> defaultSuppressionAnnotations() {
-        Collection<String> defaultValues = new ArrayList<>();
-        defaultValues.addAll(super.defaultSuppressionAnnotations());
+        Collection<String> defaultValues = new ArrayList<>(super.defaultSuppressionAnnotations());
         defaultValues.add("java.lang.Deprecated");
         defaultValues.add("javafx.fxml.FXML");
         defaultValues.add("lombok.experimental.Delegate");
+        defaultValues.add("lombok.EqualsAndHashCode");
         return defaultValues;
     }
 
     @Override
     public Object visit(ASTClassOrInterfaceDeclaration node, Object data) {
-        boolean classHasLombok = hasLombokAnnotation(node);
+        if (hasIgnoredAnnotation(node)) {
+            return super.visit(node, data);
+        }
 
         Map<VariableNameDeclaration, List<NameOccurrence>> vars = node.getScope()
-                .getDeclarations(VariableNameDeclaration.class);
+                                                                      .getDeclarations(VariableNameDeclaration.class);
         for (Map.Entry<VariableNameDeclaration, List<NameOccurrence>> entry : vars.entrySet()) {
             VariableNameDeclaration decl = entry.getKey();
             AccessNode accessNodeParent = decl.getAccessNodeParent();
-            if (!accessNodeParent.isPrivate() || isOK(decl.getImage()) || classHasLombok
+            if (!accessNodeParent.isPrivate()
+                || isOK(decl.getImage())
                 || hasIgnoredAnnotation((Annotatable) accessNodeParent)) {
                 continue;
             }

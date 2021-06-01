@@ -8,6 +8,7 @@ import java.io.Writer;
 
 import net.sourceforge.pmd.lang.dfa.DFAGraphRule;
 import net.sourceforge.pmd.lang.metrics.LanguageMetricsProvider;
+import net.sourceforge.pmd.util.designerbindings.DesignerBindings;
 
 
 /**
@@ -16,6 +17,7 @@ import net.sourceforge.pmd.lang.metrics.LanguageMetricsProvider;
  * @see LanguageVersionHandler
  */
 public abstract class AbstractLanguageVersionHandler implements LanguageVersionHandler {
+
 
     @Override
     public DataFlowHandler getDataFlowHandler() {
@@ -44,7 +46,7 @@ public abstract class AbstractLanguageVersionHandler implements LanguageVersionH
 
     @Override
     public VisitorStarter getSymbolFacade(ClassLoader classLoader) {
-        return VisitorStarter.DUMMY;
+        return getSymbolFacade();
     }
 
     @Override
@@ -79,5 +81,10 @@ public abstract class AbstractLanguageVersionHandler implements LanguageVersionH
     @Override
     public LanguageMetricsProvider<?, ?> getLanguageMetricsProvider() {
         return null;
+    }
+
+    @Override
+    public DesignerBindings getDesignerBindings() {
+        return DesignerBindings.DefaultDesignerBindings.getInstance();
     }
 }

@@ -1,11 +1,16 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
 package net.sourceforge.pmd.lang.apex.ast;
 
-import net.sourceforge.pmd.Rule;
+import java.util.stream.Collectors;
 
+import net.sourceforge.pmd.Rule;
+import net.sourceforge.pmd.annotation.InternalApi;
+
+import apex.jorje.data.Identifier;
+import apex.jorje.data.ast.TypeRef;
 import apex.jorje.semantic.ast.compilation.UserInterface;
 
 public class ASTUserInterface extends ApexRootNode<UserInterface> implements ASTUserClassOrInterface<UserInterface>,
@@ -13,6 +18,8 @@ public class ASTUserInterface extends ApexRootNode<UserInterface> implements AST
 
     private ApexQualifiedName qname;
 
+    @Deprecated
+    @InternalApi
     public ASTUserInterface(UserInterface userInterface) {
         super(userInterface);
     }
@@ -24,7 +31,7 @@ public class ASTUserInterface extends ApexRootNode<UserInterface> implements AST
 
     @Override
     public String getImage() {
-        String apexName = node.getDefiningType().getApexName();
+        String apexName = getDefiningType();
         return apexName.substring(apexName.lastIndexOf('.') + 1);
     }
 
@@ -63,5 +70,11 @@ public class ASTUserInterface extends ApexRootNode<UserInterface> implements AST
 
     public ASTModifierNode getModifiers() {
         return getFirstChildOfType(ASTModifierNode.class);
+    }
+
+    public String getSuperInterfaceName() {
+        return node.getDefiningType().getCodeUnitDetails().getInterfaceTypeRefs().stream().map(TypeRef::getNames)
+                .map(it -> it.stream().map(Identifier::getValue).collect(Collectors.joining(".")))
+                .findFirst().orElse("");
     }
 }

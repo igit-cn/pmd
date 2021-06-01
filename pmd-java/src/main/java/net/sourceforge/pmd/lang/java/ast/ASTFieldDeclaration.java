@@ -8,6 +8,7 @@ import java.util.Iterator;
 
 import net.sourceforge.pmd.annotation.InternalApi;
 import net.sourceforge.pmd.lang.ast.SignedNode;
+import net.sourceforge.pmd.lang.ast.xpath.internal.DeprecatedAttribute;
 import net.sourceforge.pmd.lang.java.multifile.signature.JavaFieldSignature;
 import net.sourceforge.pmd.lang.java.typeresolution.typedefinition.JavaTypeDefinition;
 
@@ -130,8 +131,8 @@ public class ASTFieldDeclaration extends AbstractJavaAccessTypeNode implements D
         if (classOrInterfaceBody == null || classOrInterfaceBody.isAnonymousInnerClass()) {
             return false;
         }
-        if (classOrInterfaceBody.jjtGetParent() instanceof ASTClassOrInterfaceDeclaration) {
-            ASTClassOrInterfaceDeclaration n = (ASTClassOrInterfaceDeclaration) classOrInterfaceBody.jjtGetParent();
+        if (classOrInterfaceBody.getParent() instanceof ASTClassOrInterfaceDeclaration) {
+            ASTClassOrInterfaceDeclaration n = (ASTClassOrInterfaceDeclaration) classOrInterfaceBody.getParent();
             return n.isInterface();
         }
         return false;
@@ -153,22 +154,22 @@ public class ASTFieldDeclaration extends AbstractJavaAccessTypeNode implements D
     }
 
     private int checkType() {
-        if (jjtGetNumChildren() == 0 || !(jjtGetChild(0) instanceof ASTType)) {
+        if (getNumChildren() == 0 || !(getChild(0) instanceof ASTType)) {
             return 0;
         }
-        return ((ASTType) jjtGetChild(0)).getArrayDepth();
+        return ((ASTType) getChild(0)).getArrayDepth();
     }
 
     private int checkDecl() {
-        if (jjtGetNumChildren() < 2 || !(jjtGetChild(1) instanceof ASTVariableDeclarator)) {
+        if (getNumChildren() < 2 || !(getChild(1) instanceof ASTVariableDeclarator)) {
             return 0;
         }
-        return ((ASTVariableDeclaratorId) jjtGetChild(1).jjtGetChild(0)).getArrayDepth();
+        return ((ASTVariableDeclaratorId) getChild(1).getChild(0)).getArrayDepth();
     }
 
     /**
      * Gets the variable name of this field. This method searches the first
-     * VariableDeclartorId node and returns its image or <code>null</code> if
+     * VariableDeclaratorId node and returns its image or <code>null</code> if
      * the child node is not found.
      *
      * @return a String representing the name of the variable
@@ -177,6 +178,7 @@ public class ASTFieldDeclaration extends AbstractJavaAccessTypeNode implements D
      *     Iterate on the {@linkplain ASTVariableDeclaratorId VariableDeclaratorIds} instead
      */
     @Deprecated
+    @DeprecatedAttribute(replaceWith = "VariableDeclaratorId/@Name")
     public String getVariableName() {
         ASTVariableDeclaratorId decl = getFirstDescendantOfType(ASTVariableDeclaratorId.class);
         if (decl != null) {

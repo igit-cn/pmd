@@ -25,12 +25,15 @@ import java.io.Writer;
 
 import org.apache.commons.lang3.text.StrBuilder;
 
-import net.sourceforge.pmd.lang.ast.AbstractNode;
+import net.sourceforge.pmd.annotation.InternalApi;
+import net.sourceforge.pmd.lang.ast.impl.javacc.AbstractJjtreeNode;
 
 /**
  *
  */
-public class AbstractVmNode extends AbstractNode implements VmNode {
+@InternalApi
+@Deprecated
+public class AbstractVmNode extends AbstractJjtreeNode<VmNode> implements VmNode {
 
     /** */
     // TODO - It seems that this field is only valid when parsing, and should
@@ -93,9 +96,8 @@ public class AbstractVmNode extends AbstractNode implements VmNode {
         endColumn = parser.token.endColumn;
     }
 
-    /**
-     * @param t
-     */
+    @InternalApi
+    @Deprecated
     public void setFirstToken(final Token t) {
         this.first = t;
     }
@@ -115,10 +117,8 @@ public class AbstractVmNode extends AbstractNode implements VmNode {
 
     @Override
     public Object childrenAccept(final VmParserVisitor visitor, final Object data) {
-        if (children != null) {
-            for (int i = 0; i < children.length; ++i) {
-                ((VmNode) children[i]).jjtAccept(visitor, data);
-            }
+        for (VmNode c : children()) {
+            c.jjtAccept(visitor, data);
         }
         return data;
     }
@@ -141,7 +141,9 @@ public class AbstractVmNode extends AbstractNode implements VmNode {
     /**
      * @param prefix
      * @return String representation of this node.
+     * @deprecated will be removed with PMD 7. Was only needed for {@link #dump(String, boolean, Writer)}.
      */
+    @Deprecated
     public String toString(final String prefix) {
         return prefix + toString();
     }

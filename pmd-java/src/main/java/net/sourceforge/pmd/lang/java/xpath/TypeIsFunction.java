@@ -6,6 +6,7 @@ package net.sourceforge.pmd.lang.java.xpath;
 
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.jaxen.Context;
 import org.jaxen.Function;
 import org.jaxen.FunctionCallException;
@@ -15,7 +16,7 @@ import org.jaxen.XPathFunctionContext;
 import net.sourceforge.pmd.annotation.InternalApi;
 import net.sourceforge.pmd.lang.ast.Node;
 import net.sourceforge.pmd.lang.java.ast.TypeNode;
-import net.sourceforge.pmd.lang.java.typeresolution.TypeHelper;
+import net.sourceforge.pmd.lang.java.types.TypeTestUtil;
 
 
 @InternalApi
@@ -35,7 +36,7 @@ public class TypeIsFunction implements Function {
         }
         final String fullTypeName = (String) args.get(0);
         final Node n = (Node) context.getNodeSet().get(0);
-        
+
         return typeIs(n, fullTypeName);
     }
 
@@ -48,9 +49,10 @@ public class TypeIsFunction implements Function {
      * @param fullTypeName The fully qualified name of the class or any supertype
      * @return True if the type of the node matches, false otherwise.
      */
-    public static boolean typeIs(final Node n, final String fullTypeName) {
+    public static boolean typeIs(Node n, String fullTypeName) {
         if (n instanceof TypeNode) {
-            return TypeHelper.isA((TypeNode) n, fullTypeName);
+            fullTypeName = StringUtils.deleteWhitespace(fullTypeName);
+            return TypeTestUtil.isA(fullTypeName, (TypeNode) n);
         } else {
             throw new IllegalArgumentException("typeIs function may only be called on a TypeNode.");
         }

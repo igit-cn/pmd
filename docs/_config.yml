@@ -1,9 +1,9 @@
 repository: pmd/pmd
 
 pmd:
-    version: 6.17.0
-    previous_version: 6.16.0
-    date: ??-July-2019
+    version: 6.36.0-SNAPSHOT
+    previous_version: 6.35.0
+    date: ??-June-2021
     release_type: minor
 
 # release types: major, minor, bugfix
@@ -42,6 +42,11 @@ exclude:
   - README.md
   - Dockerfile
   - build-docs.sh
+  - pdf-*.sh
+  - pdfconfigs/
+  - pdf/
+  - sitemap_generator.sh
+  - render_release_notes.rb
 
 feedback_subject_line: PMD Source Code Analyzer
 
@@ -115,3 +120,7 @@ description: "Intended as a documentation theme based on Jekyll for technical wr
 # needed for sitemap.xml file only
 url: https://pmd.github.io/pmd
 baseurl: ""
+
+# used by javadoc_tag.rb
+# https://javadoc.io/page/net.sourceforge.pmd
+javadoc_url_prefix: https://docs.pmd-code.org/apidocs

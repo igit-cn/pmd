@@ -13,17 +13,20 @@ import java.util.Properties;
 import net.sourceforge.pmd.cache.AnalysisCache;
 import net.sourceforge.pmd.cache.FileAnalysisCache;
 import net.sourceforge.pmd.cache.NoopAnalysisCache;
+import net.sourceforge.pmd.cli.PmdParametersParseResult;
 import net.sourceforge.pmd.lang.LanguageRegistry;
 import net.sourceforge.pmd.lang.LanguageVersion;
 import net.sourceforge.pmd.lang.LanguageVersionDiscoverer;
 import net.sourceforge.pmd.renderers.Renderer;
 import net.sourceforge.pmd.renderers.RendererFactory;
 import net.sourceforge.pmd.util.ClasspathClassLoader;
-import net.sourceforge.pmd.util.IOUtil;
 
 /**
- * This class contains the details for the runtime configuration of PMD. There
- * are several aspects to the configuration of PMD.
+ * This class contains the details for the runtime configuration of a PMD run.
+ * You can either create one and set individual fields, or mimic a CLI run by
+ * using {@link PmdParametersParseResult#extractParameters(String...) extractParameters}.
+ *
+ * <p>There are several aspects to the configuration of PMD.
  *
  * <p>The aspects related to generic PMD behavior:</p>
  * <ul>
@@ -402,8 +405,11 @@ public class PMDConfiguration extends AbstractConfiguration {
     public Renderer createRenderer(boolean withReportWriter) {
         Renderer renderer = RendererFactory.createRenderer(reportFormat, reportProperties);
         renderer.setShowSuppressedViolations(showSuppressedViolations);
+        if (reportShortNames && inputPaths != null) {
+            renderer.setUseShortNames(Arrays.asList(inputPaths.split(",")));
+        }
         if (withReportWriter) {
-            renderer.setWriter(IOUtil.createWriter(reportFile));
+            renderer.setReportFile(reportFile);
         }
         return renderer;
     }
@@ -578,7 +584,7 @@ public class PMDConfiguration extends AbstractConfiguration {
 
     /**
      * Retrieves the currently used analysis cache. Will never be null.
-     * 
+     *
      * @return The currently used analysis cache. Never null.
      */
     public AnalysisCache getAnalysisCache() {
@@ -590,7 +596,7 @@ public class PMDConfiguration extends AbstractConfiguration {
 
         return analysisCache;
     }
-    
+
     /**
      * Sets the analysis cache to be used. Setting a
      * value of {@code null} will cause a Noop AnalysisCache to be used.
@@ -608,7 +614,7 @@ public class PMDConfiguration extends AbstractConfiguration {
     /**
      * Sets the location of the analysis cache to be used. This will automatically configure
      * and appropriate AnalysisCache implementation.
-     * 
+     *
      * @param cacheLocation The location of the analysis cache to be used.
      */
     public void setAnalysisCacheLocation(final String cacheLocation) {

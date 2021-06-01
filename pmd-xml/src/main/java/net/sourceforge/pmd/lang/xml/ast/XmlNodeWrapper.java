@@ -76,7 +76,7 @@ public class XmlNodeWrapper extends AbstractDomNodeProxy implements XmlNode {
         org.w3c.dom.Node parent = node.getParentNode();
         NodeList childNodes = parent.getChildNodes();
         for (int i = 0; i < childNodes.getLength(); i++) {
-            if (node == childNodes.item(i)) {
+            if (node.equals(childNodes.item(i))) {
                 return i;
             }
         }
@@ -89,12 +89,21 @@ public class XmlNodeWrapper extends AbstractDomNodeProxy implements XmlNode {
         return parser.wrapDomNode(node.getChildNodes().item(index));
     }
 
+    @Override
+    public Node getChild(int index) {
+        return jjtGetChild(index);
+    }
 
     @Override
     public int jjtGetNumChildren() {
         return node.hasChildNodes() ? node.getChildNodes().getLength() : 0;
     }
 
+
+    @Override
+    public int getNumChildren() {
+        return jjtGetNumChildren();
+    }
 
     @Override
     public int jjtGetId() {
